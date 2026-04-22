@@ -21,23 +21,20 @@ def preprocess_data(df):
     if 'age' in df.columns:
         df['age'] = pd.to_numeric(df['age'], errors='coerce')
 
+    # --- LIMPEZA DE DADOS (OUTLIERS) ---
+    
     if 'sleep_hours' in df.columns:
-        df['sleep_hours'] = pd.to_numeric(
-            df['sleep_hours'],
-            errors='coerce'
-        )
+        df['sleep_hours'] = pd.to_numeric(df['sleep_hours'], errors='coerce')
+        # Filtra apenas dados humanos possíveis (0 a 24h)
+        df = df[(df['sleep_hours'] > 0) & (df['sleep_hours'] <= 24)]
 
     if 'recovery_score' in df.columns:
-        df['recovery_score'] = pd.to_numeric(
-            df['recovery_score'],
-            errors='coerce'
-        )
+        df['recovery_score'] = pd.to_numeric(df['recovery_score'], errors='coerce')
+        # Filtra recovery para garantir que esteja entre 0 e 100
+        df = df[(df['recovery_score'] >= 0) & (df['recovery_score'] <= 100)]
 
     if 'hrv' in df.columns:
-        df['hrv'] = pd.to_numeric(
-            df['hrv'],
-            errors='coerce'
-        )
+        df['hrv'] = pd.to_numeric(df['hrv'], errors='coerce')
 
     return df
 
@@ -198,6 +195,11 @@ def sleep_by_age_gender(df):
         return html.Div()
 
     temp = df.copy()
+    
+    # --- FILTRAGEM ---
+    # Mantém apenas registros onde o sono é maior que 0 e menor ou igual a 24 horas
+    temp = temp[(temp['sleep_hours'] > 0) & (temp['sleep_hours'] <= 24)]
+    # -----------------
 
     bins = [0, 20, 30, 40, 50, 60, 100]
     labels = ['<20', '20-29', '30-39', '40-49', '50-59', '60+']
