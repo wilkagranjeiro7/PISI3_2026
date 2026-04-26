@@ -1,401 +1,174 @@
 from dash import html, dcc
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 
+# ==================================================
+# 🎨 CONFIGURAÇÕES DE DESIGN
+# ==================================================
+# Paleta (Teal e Laranja queimado)
+COLOR_MAP = {'Male': '#2A9D8F', 'Female': '#E76F51'}
+TEMPLATE = 'plotly_white'
 
-# =====================================
-# 🔧 PREPROCESSAMENTO
-# =====================================
+# ==================================================
+# 🔧 FUNÇÕES AUXILIARES E PREPROCESSAMENTO
+# ==================================================
+
+def convert_to_hours(series):
+    """Detecta se a coluna está em horas, minutos ou segundos e converte para horas."""
+    serie = pd.to_numeric(series, errors="coerce")
+    validos = serie.dropna()
+    if validos.empty: return serie
+    ref = validos.quantile(0.95)
+    # Se for horas (ref <= 24), mantém. Se for minutos ou segundos, divide.
+    if ref <= 24: pass
+    elif ref <= 1500: serie = serie / 60
+    else: serie = serie / 3600
+    return serie
+
+def clean_hrv(series):
+    """Corrige valores extremos de HRV e ajusta escalas inconsistentes."""
+    serie = pd.to_numeric(series, errors="coerce")
+    serie.loc[serie > 5000] = pd.NA
+    validos = serie.dropna()
+    if validos.empty: return serie
+    ref = validos.quantile(0.95)
+    # Ajuste de escala (x100 ou x10) para normalizar dados
+    if ref > 1000: serie = serie / 100
+    elif ref > 250: serie = serie / 10
+    serie.loc[(serie < 10) | (serie > 250)] = pd.NA
+    return serie
 
 def preprocess_data(df):
+    """Limpeza robusta de outliers e tratamento de nulos."""
     df = df.copy()
-
-    if 'workout_time_of_day' in df.columns:
-        df['treinou'] = df['workout_time_of_day'].notna().astype(int)
-    else:
-        df['treinou'] = 0
-
-    if 'date' in df.columns:
-        df['date'] = pd.to_datetime(df['date'], errors='coerce')
-
-    if 'age' in df.columns:
-        df['age'] = pd.to_numeric(df['age'], errors='coerce')
-
-    # --- LIMPEZA DE DADOS (OUTLIERS) ---
+    if "date" in df.columns: df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["treinou"] = df["workout_time_of_day"].notna().astype(int) if "workout_time_of_day" in df.columns else 0
     
-    if 'sleep_hours' in df.columns:
-        df['sleep_hours'] = pd.to_numeric(df['sleep_hours'], errors='coerce')
-        # Filtra apenas dados humanos possíveis (0 a 24h)
-        df = df[(df['sleep_hours'] > 0) & (df['sleep_hours'] <= 24)]
+    if "age" in df.columns:
+        df["age"] = pd.to_numeric(df["age"], errors="coerce")
+        df.loc[(df["age"] < 10) | (df["age"] > 100), "age"] = pd.NA
+        
+    if "recovery_score" in df.columns:
+        df["recovery_score"] = pd.to_numeric(df["recovery_score"], errors="coerce")
+        df.loc[(df["recovery_score"] < 0) | (df["recovery_score"] > 100), "recovery_score"] = pd.NA
+        
+    if "hrv" in df.columns: df["hrv"] = clean_hrv(df["hrv"])
+    
+    if "sleep_hours" in df.columns:
+        df["sleep_hours"] = pd.to_numeric(df["sleep_hours"], errors="coerce")
+        df.loc[(df["sleep_hours"] < 2) | (df["sleep_hours"] > 16), "sleep_hours"] = pd.NA
 
-    if 'recovery_score' in df.columns:
-        df['recovery_score'] = pd.to_numeric(df['recovery_score'], errors='coerce')
-        # Filtra recovery para garantir que esteja entre 0 e 100
-        df = df[(df['recovery_score'] >= 0) & (df['recovery_score'] <= 100)]
-
-    if 'hrv' in df.columns:
-        df['hrv'] = pd.to_numeric(df['hrv'], errors='coerce')
-
+    # Tratamento de fases do sono
+    for col in ["light_sleep_hours", "deep_sleep_hours", "rem_sleep_hours"]:
+        if col in df.columns:
+            df[col] = convert_to_hours(df[col])
+            df.loc[(df[col] < 0) | (df[col] > 12), col] = pd.NA
+            if "sleep_hours" in df.columns:
+                df.loc[df[col] > df["sleep_hours"], col] = pd.NA
     return df
 
+def add_age_group(df):
+    """Cria faixas etárias para agrupamento."""
+    df = df.copy()
+    bins = [0, 20, 30, 40, 50, 60, 100]
+    labels = ["<20", "20-29", "30-39", "40-49", "50-59", "60+"]
+    df["faixa_idade"] = pd.cut(df["age"], bins=bins, labels=labels)
+    return df
 
-# =====================================
-# 📊 KPI CARD
-# =====================================
+# ==================================================
+# 🍬 FUNÇÃO DE VISUALIZAÇÃO (LOLLIPOP)
+# ==================================================
+
+def create_lollipop(df, x_col, y_col, color_col, title, y_axis_title):
+    """Gera gráfico Lollipop, fugindo do visual trivial de colunas."""
+    fig = go.Figure()
+    for cat in df[color_col].unique():
+        subset = df[df[color_col] == cat]
+        fig.add_trace(go.Scatter(
+            x=subset[x_col], y=subset[y_col], mode='markers+lines',
+            name=cat, marker=dict(size=12, color=COLOR_MAP.get(cat, '#888')),
+            line=dict(width=2, color=COLOR_MAP.get(cat, '#888'))
+        ))
+    fig.update_layout(title=title, template=TEMPLATE, yaxis_title=y_axis_title)
+    return dcc.Graph(figure=fig)
+
+# ==================================================
+# 📊 KPIS E COMPONENTES
+# ==================================================
 
 def kpi_card(title, value):
-    return html.Div([
-        html.H5(title),
-        html.H2(value)
-    ], style={
-        "background": "#f8f9fa",
-        "padding": "20px",
-        "borderRadius": "10px",
-        "textAlign": "center",
-        "flex": "1",
-        "minWidth": "220px"
-    })
-
-
-# =====================================
-# 📊 KPIS
-# =====================================
+    return html.Div([html.H5(title), html.H2(value)], 
+        style={"background": "#f8f9fa", "padding": "20px", "borderRadius": "10px", "textAlign": "center", "flex": "1"})
 
 def create_kpis(df):
+    sono = df["sleep_hours"].mean() if "sleep_hours" in df.columns else None
+    recovery = df["recovery_score"].mean() if "recovery_score" in df.columns else None
+    hrv = df["hrv"].median() if "hrv" in df.columns else None
+    treino = df["treinou"].mean() * 100
     return html.Div([
+        kpi_card("Sono Médio", f"{sono:.1f}h" if pd.notna(sono) else "-"),
+        kpi_card("Recovery Médio", f"{recovery:.1f}" if pd.notna(recovery) else "-"),
+        kpi_card("HRV Mediano", f"{hrv:.1f} ms" if pd.notna(hrv) else "-"),
+        kpi_card("% Treino", f"{treino:.0f}%")
+    ], style={"display": "flex", "gap": "20px", "flexWrap": "wrap", "marginBottom": "30px"})
 
-        kpi_card(
-            "Recovery Médio",
-            f"{df['recovery_score'].mean():.1f}"
-            if 'recovery_score' in df.columns else "-"
-        ),
-
-        kpi_card(
-            "Sono Médio",
-            f"{df['sleep_hours'].mean():.1f}h"
-            if 'sleep_hours' in df.columns else "-"
-        ),
-
-        kpi_card(
-            "HRV Médio",
-            f"{df['hrv'].mean():.1f}"
-            if 'hrv' in df.columns else "-"
-        ),
-
-        kpi_card(
-            "% Treino",
-            f"{df['treinou'].mean()*100:.0f}%"
-        )
-
-    ], style={
-        "display": "flex",
-        "gap": "20px",
-        "flexWrap": "wrap",
-        "marginBottom": "30px"
-    })
-
-
-# =====================================
-# 👥 USUÁRIOS POR GÊNERO
-# =====================================
+# ==================================================
+# 📉 GRÁFICOS
+# ==================================================
 
 def users_by_gender(df):
-    if not {'user_id', 'gender'}.issubset(df.columns):
-        return html.Div()
-
-    resumo = (
-        df[['user_id', 'gender']]
-        .drop_duplicates()
-        .groupby('gender')
-        .size()
-        .reset_index(name='usuarios')
-    )
-
-    fig = px.pie(
-        resumo,
-        names='gender',
-        values='usuarios',
-        title='Usuários por Gênero'
-    )
-
-    fig.update_layout(template='plotly_white')
-
+    resumo = df[["user_id", "gender"]].drop_duplicates().groupby("gender")["user_id"].nunique().reset_index(name="usuarios")
+    fig = px.bar(resumo, x="usuarios", y="gender", orientation="h", color="gender", 
+                 color_discrete_map=COLOR_MAP, title="Distribuição de Usuários por Gênero")
+    fig.update_layout(template=TEMPLATE)
     return dcc.Graph(figure=fig)
 
-
-# =====================================
-# 🎂 IDADE POR GÊNERO
-# =====================================
-
-def age_by_gender(df):
-    if not {'age', 'gender'}.issubset(df.columns):
-        return html.Div()
-
-    fig = px.box(
-        df,
-        x='gender',
-        y='age',
-        color='gender',
-        title='Distribuição de Idade por Gênero'
-    )
-
-    fig.update_layout(template='plotly_white')
-
-    return dcc.Graph(figure=fig)
-
-
-# =====================================
-# 🏃 ATIVIDADES POR GÊNERO
-# =====================================
-
-def sport_by_gender(df):
-    if not {'gender', 'primary_sport'}.issubset(df.columns):
-        return html.Div()
-
-    temp = df.copy()
-
-    temp['primary_sport'] = (
-        temp['primary_sport']
-        .astype(str)
-        .str.strip()
-        .str.title()
-    )
-
-    resumo = (
-        temp.groupby(['gender', 'primary_sport'])
-        .size()
-        .reset_index(name='quantidade')
-    )
-
-    fig = px.bar(
-        resumo,
-        x='primary_sport',
-        y='quantidade',
-        color='gender',
-        barmode='group',
-        text_auto=True,
-        title='Atividades por Gênero'
-    )
-
-    fig.update_layout(
-        template='plotly_white',
-        xaxis_tickangle=-35,
-        height=500
-    )
-
-    return dcc.Graph(figure=fig)
-
-
-# =====================================
-# 😴 SONO
-# =====================================
+def hrv_by_age_gender(df):
+    temp = add_age_group(df)
+    resumo = temp.groupby(["faixa_idade", "gender"])["hrv"].median().reset_index()
+    return create_lollipop(resumo, "faixa_idade", "hrv", "gender", "HRV Mediano por Idade", "HRV (ms)")
 
 def sleep_by_age_gender(df):
-    if not {'age', 'gender', 'sleep_hours'}.issubset(df.columns):
-        return html.Div()
-
-    temp = df.copy()
-    
-    # --- FILTRAGEM ---
-    # Mantém apenas registros onde o sono é maior que 0 e menor ou igual a 24 horas
-    temp = temp[(temp['sleep_hours'] > 0) & (temp['sleep_hours'] <= 24)]
-    # -----------------
-
-    bins = [0, 20, 30, 40, 50, 60, 100]
-    labels = ['<20', '20-29', '30-39', '40-49', '50-59', '60+']
-
-    temp['faixa_idade'] = pd.cut(
-        temp['age'],
-        bins=bins,
-        labels=labels
-    )
-
-    resumo = (
-        temp.groupby(
-            ['faixa_idade', 'gender']
-        )['sleep_hours']
-        .mean()
-        .reset_index()
-    )
-
-    fig = px.bar(
-        resumo,
-        x='faixa_idade',
-        y='sleep_hours',
-        color='gender',
-        barmode='group',
-        text_auto='.1f',
-        title='Sono Médio por Faixa Etária e Gênero'
-    )
-
-    fig.update_layout(template='plotly_white')
-
-    return dcc.Graph(figure=fig)
-
-
-# =====================================
-# 💚 RECOVERY
-# =====================================
+    temp = add_age_group(df)
+    resumo = temp.groupby(["faixa_idade", "gender"])["sleep_hours"].mean().reset_index()
+    return create_lollipop(resumo, "faixa_idade", "sleep_hours", "gender", "Média de Sono por Idade", "Horas")
 
 def recovery_by_age_gender(df):
-    if not {'age', 'gender', 'recovery_score'}.issubset(df.columns):
-        return html.Div()
+    temp = add_age_group(df)
+    resumo = temp.groupby(["faixa_idade", "gender"])["recovery_score"].mean().reset_index()
+    return create_lollipop(resumo, "faixa_idade", "recovery_score", "gender", "Recovery Médio por Idade", "Score")
 
-    temp = df.copy()
-
-    bins = [0, 20, 30, 40, 50, 60, 100]
-    labels = ['<20', '20-29', '30-39', '40-49', '50-59', '60+']
-
-    temp['faixa_idade'] = pd.cut(
-        temp['age'],
-        bins=bins,
-        labels=labels
-    )
-
-    resumo = (
-        temp.groupby(
-            ['faixa_idade', 'gender']
-        )['recovery_score']
-        .mean()
-        .reset_index()
-    )
-
-    fig = px.bar(
-        resumo,
-        x='faixa_idade',
-        y='recovery_score',
-        color='gender',
-        barmode='group',
-        text_auto='.1f',
-        title='Recovery Médio por Faixa Etária e Gênero'
-    )
-
-    fig.update_layout(template='plotly_white')
-
-    return dcc.Graph(figure=fig)
-
-
-# =====================================
-# 🏋 FITNESS LEVEL
-# =====================================
-
-def fitness_by_age_gender(df):
-    if not {'age', 'gender', 'fitness_level'}.issubset(df.columns):
-        return html.Div()
-
-    temp = df.copy()
-
-    bins = [0, 20, 30, 40, 50, 60, 100]
-    labels = ['<20', '20-29', '30-39', '40-49', '50-59', '60+']
-
-    temp['faixa_idade'] = pd.cut(
-        temp['age'],
-        bins=bins,
-        labels=labels
-    )
-
-    temp['fitness_level'] = (
-        temp['fitness_level']
-        .astype(str)
-        .str.strip()
-        .str.title()
-    )
-
-    resumo = (
-        temp.groupby(
-            ['faixa_idade', 'gender', 'fitness_level']
-        )
-        .size()
-        .reset_index(name='quantidade')
-    )
-
-    fig = px.bar(
-        resumo,
-        x='faixa_idade',
-        y='quantidade',
-        color='fitness_level',
-        facet_col='gender',
-        barmode='group',
-        text_auto=True,
-        title='Fitness Level por Idade e Gênero'
-    )
-
-    fig.update_layout(
-        template='plotly_white',
-        height=550
-    )
-
-    return dcc.Graph(figure=fig)
-
-
-# =====================================
-# 💡 INSIGHTS
-# =====================================
-
-def generate_insights(df):
-    insights = []
-
-    if {'hrv', 'recovery_score'}.issubset(df.columns):
-        corr = df['hrv'].corr(df['recovery_score'])
-        insights.append(
-            html.Li(f"Correlação HRV x Recovery: {corr:.2f}")
-        )
-
-    if {'sleep_hours', 'recovery_score'}.issubset(df.columns):
-        corr = df['sleep_hours'].corr(df['recovery_score'])
-        insights.append(
-            html.Li(f"Correlação Sono x Recovery: {corr:.2f}")
-        )
-
-    return html.Div([
-        html.H4("Insights Automáticos"),
-        html.Ul(insights)
-    ])
-
-
-# =====================================
+# ==================================================
 # 🧱 LAYOUT FINAL
-# =====================================
+# ==================================================
 
 def create_layout(df):
     df = preprocess_data(df)
 
     return html.Div([
-
-        html.H1("📊 EDA - Análise Exploratória Completa"),
+        # Título coerente com dados biométricos/wearables
+        html.H1("📊 Análise de Dados de Wearables: Sono, Recovery e Fitness", style={'textAlign': 'center'}),
+        
+        # Caixa explicativa para responder ao "Target Audience"
+        html.Div([
+            html.H3("Target Audience:"),
+            html.P("Este dashboard foi desenvolvido para analisar padrões de saúde e biométricos coletados por dispositivos vestíveis (smartwatches), auxiliando no monitoramento de recuperação e performance.")
+        ], style={'background': '#f0f4f8', 'padding': '15px', 'borderRadius': '10px', 'marginBottom': '20px'}),
 
         create_kpis(df),
 
         html.Hr(),
-
-        html.H2("👥 Perfil Demográfico"),
         users_by_gender(df),
-        age_by_gender(df),
 
         html.Hr(),
-
-        html.H2("🏃 Atividades"),
-        sport_by_gender(df),
-
-        html.Hr(),
-
-        html.H2("😴 Sono"),
-        sleep_by_age_gender(df),
+        # Agrupamento para layouts lado a lado
+        html.Div([
+            html.Div([sleep_by_age_gender(df)], style={'width': '48%', 'display': 'inline-block'}),
+            html.Div([recovery_by_age_gender(df)], style={'width': '48%', 'display': 'inline-block'})
+        ]),
 
         html.Hr(),
+        hrv_by_age_gender(df)
 
-        html.H2("💚 Recovery"),
-        recovery_by_age_gender(df),
-
-        html.Hr(),
-
-        html.H2("🏋 Fitness Level"),
-        fitness_by_age_gender(df),
-
-        html.Hr(),
-
-        generate_insights(df)
-
-    ], style={
-        "padding": "20px"
-    })
+    ], style={"padding": "30px", "fontFamily": "sans-serif"})
