@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Dados (Arquivos que não devem ir para o GitHub)
+data/
+*.parquet
+*.xlsx
+*.csv
+
+# Sistema / Editor
+.DS_Store
+.ipynb_checkpoints/
+.vscode/
