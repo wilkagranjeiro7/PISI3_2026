@@ -1,0 +1,24 @@
+fitness_dashboard/
+│
+├── app.py                 # Aplicação principal
+├── data_loader.py         # Gerenciamento de dados (Google Drive)
+├── pages/
+│   ├── __init__.py
+│   ├── home.py           # Página inicial
+│   ├── dataframes.py     # Visualização de DataFrames
+│   ├── filtros.py        # Filtros interativos
+│   ├── agrupamentos.py   # GroupBy e agregações
+│   ├── boolean.py        # Análise booleana
+│   ├── profiling.py      # Profiling de dados
+│   ├── parquet.py        # Otimização com Parquet
+│   ├── plots.py          # Visualizações
+│   ├── subplots.py       # Subplots
+│   ├── kmeans.py         # Clusterização K-means
+│   ├── classificacao.py  # Classificação
+│   ├── matriz_confusao.py # Matriz de confusão
+│   └── eda.py            # Análise exploratória
+│
+├── assets/
+│   └── style.css
+│
+└── requirements.txt
