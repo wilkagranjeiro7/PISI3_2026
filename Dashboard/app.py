@@ -6,8 +6,7 @@ from threading import Timer
 from pathlib import Path
 from pages import (
     home, dataframes, filtros, agrupamentos, profiling,
-    parquet, plots, subplots, kmeans, classificacao, 
-    eda
+    parquet, plots, kmeans, classificacao, eda
 )
 
 
@@ -250,8 +249,6 @@ def display_page(pathname):
         return parquet.create_layout(df)
     elif pathname == '/plots':
         return plots.create_layout(df)
-    elif pathname == '/subplots':
-        return subplots.create_layout(df)
     elif pathname == '/kmeans':
         return kmeans.create_layout(df)
     elif pathname == '/classificacao':
