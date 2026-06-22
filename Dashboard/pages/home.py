@@ -85,10 +85,13 @@ def create_layout(df):
     })
 
     # ================== FUNÇÃO CARD ==================
-    def card(titulo, link, descricao):
+    def card(titulo, link, descricao, icone=None):
         return html.Div([
             html.Div([
-                html.H5(titulo, style={'color': COLORS['text'], 'marginBottom': '10px', 'fontWeight': '600'}),
+                html.Div([
+                    html.I(className=f"fas fa-{icone}", style={'color': COLORS['accent'], 'fontSize': '24px', 'marginRight': '10px'}) if icone else None,
+                    html.H5(titulo, style={'color': COLORS['text'], 'marginBottom': '10px', 'fontWeight': '600'}),
+                ], style={'display': 'flex', 'alignItems': 'center'}),
                 html.P(descricao, style={'color': COLORS['text_secondary'], 'marginBottom': '15px', 'fontSize': '14px'}),
                 html.A(
                     "Acessar →",
@@ -122,28 +125,33 @@ def create_layout(df):
         info_card
     ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '30px'})
 
-    # ================== NAVEGAÇÃO (3 linhas x 3 cards) ==================
+    # ================== NAVEGAÇÃO (3 linhas x 3 cards + 1 linha extra para Insights) ==================
     navigation = html.Div([
 
         # LINHA 1
         html.Div([
-            card("Dataframes", "/dataframes", "Exploração completa dos dados"),
-            card("EDA", "/eda", "Análise exploratória interativa"),
-            card("Profiling", "/profiling", "Resumo da qualidade dos dados"),
+            card("Dataframes", "/dataframes", "Exploração completa dos dados", "table"),
+            card("EDA", "/eda", "Análise exploratória interativa", "chart-line"),
+            card("Profiling", "/profiling", "Resumo da qualidade dos dados", "clipboard-list"),
         ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
 
         # LINHA 2
         html.Div([
-            card("Plots", "/plots", "Visualizações interativas"),
-            card("Parquet", "/parquet", "Otimização com Parquet"),
-            card("Filtros", "/filtros", "Filtragem interativa"),
+            card("Plots", "/plots", "Visualizações interativas", "chart-bar"),
+            card("Parquet", "/parquet", "Otimização com Parquet", "file-archive"),
+            card("Filtros", "/filtros", "Filtragem interativa", "filter"),
         ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
 
         # LINHA 3
         html.Div([
-            card("Agrupamentos", "/agrupamentos", "Agregações e group by"),
-            card("K-Means", "/kmeans", "Clusterização de usuários"),
-            card("Classificação", "/classificacao", "Modelos de machine learning"),
+            card("Agrupamentos", "/agrupamentos", "Agregações e group by", "layer-group"),
+            card("K-Means", "/kmeans", "Clusterização de usuários", "circle-nodes"),
+            card("Classificação", "/classificacao", "Modelos de machine learning", "robot"),
+        ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
+
+        # LINHA 4 - INSIGHTS (DESTAQUE)
+        html.Div([
+            card("Insights", "/insights", "Análise de recuperação e recomendações personalizadas", "lightbulb"),
         ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
 
     ])
