@@ -3,11 +3,10 @@ import dash_bootstrap_components as dbc
 from data_loader import data_manager
 import webbrowser
 from threading import Timer
-from pathlib import Path
 from pages import (
     home, dataframes, filtros, agrupamentos, profiling,
     parquet, plots, subplots, kmeans, classificacao, 
-    eda
+    eda, insights
 )
 
 
@@ -18,14 +17,8 @@ app = Dash(
 )
 server = app.server
 
-# ================== LIMPAR CACHE ANTIGO ==================
-cache_path = Path("data/dataset.pkl")
-if cache_path.exists():
-    cache_path.unlink()
-    print("🗑️ Cache antigo removido. Recarregando dados do Excel...")
-
-# Carregar dados (forçando recarga do Excel)
-df = data_manager.load_data(force_reload=True)
+# Carregar dados
+df = data_manager.load_data()
 
 # CSS customizado para dropdowns e scrollbar
 app.index_string = '''
@@ -238,28 +231,26 @@ app.layout = dbc.Container([
     Input('url', 'pathname')
 )
 def display_page(pathname):
-    if pathname == '/dataframes':
-        return dataframes.create_layout(df)
-    elif pathname == '/filtros':
-        return filtros.create_layout(df)
-    elif pathname == '/agrupamentos':
-        return agrupamentos.create_layout(df)
-    elif pathname == '/profiling':
-        return profiling.create_layout(df)
-    elif pathname == '/parquet':
-        return parquet.create_layout(df)
-    elif pathname == '/plots':
-        return plots.create_layout(df)
-    elif pathname == '/subplots':
-        return subplots.create_layout(df)
-    elif pathname == '/kmeans':
-        return kmeans.create_layout(df)
-    elif pathname == '/classificacao':
-        return classificacao.create_layout(df)
-    elif pathname == '/eda':
-        return eda.create_layout(df)
-    else:
-        return home.create_layout(df)
+    # Dicionário de rotas
+    pages = {
+        '/dataframes': dataframes.create_layout,
+        '/filtros': filtros.create_layout,
+        '/agrupamentos': agrupamentos.create_layout,
+        '/profiling': profiling.create_layout,
+        '/parquet': parquet.create_layout,
+        '/plots': plots.create_layout,
+        '/subplots': subplots.create_layout,
+        '/kmeans': kmeans.create_layout,
+        '/classificacao': classificacao.create_layout,
+        '/eda': eda.create_layout,
+        '/insights': insights.create_layout,
+    }
+    
+    # Página padrão (home)
+    page_func = pages.get(pathname, home.create_layout)
+    
+    # Retorna a página com o DataFrame
+    return page_func(df)
 
 
 # ================== AUTO OPEN ==================
@@ -272,7 +263,6 @@ if __name__ == '__main__':
 
     print(f"\n{'='*60}")
     print(f"✅ APLICATIVO INICIADO!")
-    print(f"🗑️ Cache será recriado ao iniciar")
     print(f"📎 Acesse: http://localhost:8050")
     print(f"{'='*60}\n")
 
