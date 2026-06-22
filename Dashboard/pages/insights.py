@@ -59,13 +59,16 @@ def create_layout(df):
         min_val = float(df[feature].min()) if feature in df.columns else 0
         max_val = float(df[feature].max()) if feature in df.columns else 100
         
+        nome_original = metadata.get('nome', 'Desconhecido')
+        nome_formatado = formatar_nome_modelo(nome_original)
+        
         inputs.append(html.Div([
             html.Label(nome_traduzido, style={'color': CORES['text'], 'fontSize': '14px', 'marginBottom': '5px'}),
             html.Div([
                 dbc.Input(
                     type="number",
                     id=f"input-{feature}",
-                    value=valor_default,
+                    value=round(valor_default, 2),  # Truncar para 2 casas decimais
                     step=0.01,
                     style={
                         'backgroundColor': CORES['card_bg'], 
@@ -75,7 +78,7 @@ def create_layout(df):
                     }
                 ),
                 html.Small(
-                    f"Faixa típica: {min_val:.1f} - {max_val:.1f}",
+                    f"Faixa típica: {min_val:.2f} - {max_val:.2f}",  # Truncar para 2 casas decimais
                     style={'color': CORES['text_secondary'], 'fontSize': '11px', 'display': 'block', 'marginTop': '3px'}
                 )
             ])
@@ -99,7 +102,7 @@ def create_layout(df):
                     dbc.Row([
                         dbc.Col([
                             html.H5("Modelo Ativo", style={'color': CORES['accent']}),
-                            html.P(f"{metadata.get('nome', 'Desconhecido')}", 
+                            html.P(nome_formatado, 
                                   style={'color': CORES['text'], 'fontWeight': 'bold'}),
                         ], md=4),
                         dbc.Col([
@@ -257,6 +260,352 @@ def calcular_tendencia(dados_atuais, df_referencia, features):
     prevent_initial_call=True
 )
 def fazer_analise(n_clicks, hrv, resting_heart_rate, day_strain, sleep_hours, sleep_efficiency, sleep_quality, strain_per_sleep, hrv_rhr_ratio, hrv_ratio):
+    """Faz a análise com os dados inseridos usando o modelo salvo"""
+    
+    if n_clicks is None:
+        return html.Div(
+            html.P("Preencha os dados e clique em 'Analisar Recuperação' para obter insights",
+                  style={'color': CORES['text_secondary'], 'textAlign': 'center', 'marginTop': '50px'})
+        )
+    
+    # Carregar modelo salvo
+    model, scaler, features, metadata = model_manager.carregar_melhor_modelo()
+    
+    if model is None:
+        return html.Div([
+            html.H4("Erro: Nenhum modelo disponível", style={'color': CORES['danger']}),
+            html.P("Treine e salve um modelo na página de Classificação primeiro.",
+                  style={'color': CORES['text_secondary']})
+        ])
+    
+    try:
+        # Função auxiliar para truncar valores
+        def truncar_valor(valor):
+            if valor is None:
+                return 0.0
+            try:
+                return round(float(valor), 2)  # Truncar para 2 casas decimais
+            except (ValueError, TypeError):
+                return 0.0
+        
+        # Construir dicionário com os dados dos States truncados
+        valores_input = {
+            'hrv': truncar_valor(hrv),
+            'resting_heart_rate': truncar_valor(resting_heart_rate),
+            'day_strain': truncar_valor(day_strain),
+            'sleep_hours': truncar_valor(sleep_hours),
+            'sleep_efficiency': truncar_valor(sleep_efficiency),
+            'sleep_quality': truncar_valor(sleep_quality),
+            'strain_per_sleep': truncar_valor(strain_per_sleep),
+            'hrv_rhr_ratio': truncar_valor(hrv_rhr_ratio),
+            'hrv_ratio': truncar_valor(hrv_ratio)
+        }
+        
+        # Pegar apenas as features que o modelo usa
+        dados = {}
+        for feature in features:
+            if feature in valores_input:
+                dados[feature] = valores_input[feature]
+            else:
+                dados[feature] = 0.0
+        
+        # Criar DataFrame com os dados
+        df_usuario = pd.DataFrame([dados])
+        
+        # Garantir que tem todas as features na ordem correta
+        X = df_usuario[features].copy()
+        
+        # Normalizar se necessário
+        if scaler is not None:
+            X_scaled = scaler.transform(X)
+            X = pd.DataFrame(X_scaled, columns=features)
+        
+        # Fazer previsão
+        if hasattr(model, 'predict_proba'):
+            proba_alta = model.predict_proba(X)[0, 1]
+            predicao = 1 if proba_alta >= 0.5 else 0
+        else:
+            predicao = model.predict(X)[0]
+            proba_alta = predicao
+        
+        # Score de recuperação - truncar para 2 casas decimais
+        score_recuperacao = round(proba_alta * 100, 2)
+        
+        # Confiança
+        if hasattr(model, 'predict_proba'):
+            confianca = proba_alta if predicao == 1 else 1 - proba_alta
+        else:
+            confianca = 1.0
+        
+        # Truncar confiança para 2 casas decimais
+        confianca = round(confianca, 2)
+        
+        # Determinar o nível de recuperação
+        nivel = determinar_nivel_recuperacao(proba_alta, score_recuperacao)
+        
+        # Carregar DataFrame de referência para comparações
+        df_referencia = data_manager.get_clean_df()
+        
+        # ============================================
+        # ANÁLISE DE FEATURE IMPORTANCE (OPÇÃO 4)
+        # ============================================
+        feature_importance = metadata.get('metricas', {}).get('feature_importance', [])
+        insights_features = None
+        
+        if feature_importance and len(feature_importance) == len(features):
+            insights_features = analisar_feature_importance(
+                feature_importance, features, dados, df_referencia
+            )
+        
+        # ============================================
+        # TENDÊNCIA (OPÇÃO 4)
+        # ============================================
+        tendencias = calcular_tendencia(dados, df_referencia, features)
+        
+        # ============================================
+        # MONTAR RESULTADO
+        # ============================================
+        cor = nivel['cor']
+        icone = nivel['icone']
+        
+        # Componentes do resultado
+        resultado_analise = [
+            # Status Principal
+            html.Div([
+                html.H4(f"{icone} Status da Recuperação", style={'color': CORES['text']}),
+                html.H2(
+                    nivel['nivel'],
+                    style={'color': cor, 'marginTop': '15px', 'fontWeight': 'bold'}
+                ),
+            ]),
+            
+            # Score de recuperação
+            html.Div([
+                html.P(
+                    f"Score de Recuperação: {score_recuperacao:.2f} / 100",
+                    style={'color': CORES['text_secondary'], 'fontSize': '18px', 'marginTop': '10px'}
+                ),
+                html.Div([
+                    html.Div(
+                        style={
+                            'width': f"{score_recuperacao}%",
+                            'height': '30px',
+                            'backgroundColor': cor,
+                            'borderRadius': '15px',
+                            'transition': 'width 0.5s',
+                            'display': 'flex',
+                            'alignItems': 'center',
+                            'justifyContent': 'center',
+                            'color': 'white',
+                            'fontWeight': 'bold'
+                        }
+                    )
+                ], style={
+                    'width': '100%',
+                    'height': '30px',
+                    'backgroundColor': CORES['card_bg'],
+                    'borderRadius': '15px',
+                    'marginTop': '10px',
+                    'overflow': 'hidden',
+                    'border': f'1px solid {CORES["border"]}'
+                })
+            ]),
+            
+            html.P(
+                f"Probabilidade de Alta Recuperação: {proba_alta:.1%}",
+                style={'color': CORES['text_secondary'], 'fontSize': '14px', 'marginTop': '10px'}
+            ),
+            
+            html.Hr(style={'borderColor': CORES['border']}),
+        ]
+        
+        # ============================================
+        # INSIGHTS - FEATURES MAIS IMPORTANTES
+        # ============================================
+        if insights_features:
+            # Separar features positivas e negativas
+            positivas = [i for i in insights_features if i['impacto'] == 'positivo']
+            negativas = [i for i in insights_features if i['impacto'] == 'negativo']
+            
+            resultado_analise.extend([
+                html.H5("🔍 Fatores que mais influenciaram", style={'color': CORES['text']}),
+            ])
+            
+            if positivas:
+                # Pegar a feature mais positiva
+                top_positive = max(positivas, key=lambda x: abs(x['contribuicao']))
+                nome_feature = data_manager.traduzir_coluna(top_positive['feature'])
+                resultado_analise.append(
+                    html.Div([
+                        html.Span("🟢 ", style={'color': CORES['success']}),
+                        html.Span(f"Contribuição positiva: ", style={'color': CORES['text_secondary']}),
+                        html.Span(f"{nome_feature} ", style={'color': CORES['success'], 'fontWeight': 'bold'}),
+                        html.Span(f"(valor: {top_positive['valor_atual']:.2f} vs média: {top_positive['media']:.2f})",
+                                 style={'color': CORES['text_secondary'], 'fontSize': '12px'})
+                    ], style={'marginBottom': '5px'})
+                )
+            
+            if negativas:
+                # Pegar a feature mais negativa
+                top_negative = max(negativas, key=lambda x: abs(x['contribuicao']))
+                nome_feature = data_manager.traduzir_coluna(top_negative['feature'])
+                resultado_analise.append(
+                    html.Div([
+                        html.Span("🔴 ", style={'color': CORES['danger']}),
+                        html.Span(f"Contribuição negativa: ", style={'color': CORES['text_secondary']}),
+                        html.Span(f"{nome_feature} ", style={'color': CORES['danger'], 'fontWeight': 'bold'}),
+                        html.Span(f"(valor: {top_negative['valor_atual']:.2f} vs média: {top_negative['media']:.2f})",
+                                 style={'color': CORES['text_secondary'], 'fontSize': '12px'})
+                    ], style={'marginBottom': '5px'})
+                )
+            
+            resultado_analise.append(html.Hr(style={'borderColor': CORES['border']}))
+        
+        # ============================================
+        # TENDÊNCIA
+        # ============================================
+        if tendencias:
+            resultado_analise.append(
+                html.H5("📊 Tendência atual", style={'color': CORES['text']})
+            )
+            
+            for simbolo, feature, status in tendencias[:3]:  # Mostrar top 3
+                nome_feature = data_manager.traduzir_coluna(feature)
+                cor_tendencia = CORES['success'] if 'acima' in status else (CORES['danger'] if 'abaixo' in status else CORES['text_secondary'])
+                resultado_analise.append(
+                    html.Div([
+                        html.Span(f"{simbolo} ", style={'color': cor_tendencia}),
+                        html.Span(f"{nome_feature}: ", style={'color': CORES['text_secondary']}),
+                        html.Span(f"{status}", style={'color': cor_tendencia})
+                    ], style={'marginBottom': '3px'})
+                )
+            
+            resultado_analise.append(html.Hr(style={'borderColor': CORES['border']}))
+        
+        # ============================================
+        # MENSAGEM E RECOMENDAÇÃO
+        # ============================================
+        resultado_analise.extend([
+            html.Div([
+                html.H5("💡 Análise", style={'color': CORES['text']}),
+                html.P(
+                    nivel['mensagem'],
+                    style={'color': CORES['text_secondary']}
+                )
+            ]),
+            
+            html.Hr(style={'borderColor': CORES['border']}),
+            
+            html.Div([
+                html.H5("🎯 Recomendação", style={'color': CORES['text']}),
+                html.Div([
+                    html.P(
+                        nivel['recomendacao'],
+                        style={'color': cor, 'fontWeight': 'bold', 'fontSize': '16px'}
+                    ),
+                ], style={'backgroundColor': 'rgba(255,255,255,0.05)', 'padding': '15px', 'borderRadius': '8px'})
+            ]),
+            
+            html.Hr(style={'borderColor': CORES['border']}),
+            
+            # Valores analisados
+            html.H5("📋 Valores analisados", style={'color': CORES['text']}),
+            html.Div([
+                html.Div([
+                    html.Span(nome, style={'color': CORES['text_secondary']}),
+                    html.Span(f"{dados[f]:.2f}", style={'color': CORES['text'], 'float': 'right'})
+                ], style={'marginBottom': '5px'})
+                for nome, f in zip(
+                    [data_manager.traduzir_coluna(f) for f in features],
+                    features
+                )
+            ])
+        ])
+        
+        # ============================================
+        # LAYOUT FINAL
+        # ============================================
+        return html.Div([
+            dbc.Card([
+                dbc.CardBody(resultado_analise)
+            ], style={'backgroundColor': CORES['card_bg'], 'border': f'2px solid {cor}'})
+        ])
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return html.Div([
+            html.H4("Erro na análise", style={'color': CORES['danger']}),
+            html.P(f"Erro: {str(e)}", style={'color': CORES['text_secondary']})
+        ])
+
+def criar_input_com_truncate(feature, df, CORES):
+    """Cria um input com truncamento de 2 casas decimais"""
+    nome_traduzido = data_manager.traduzir_coluna(feature)
+    valor_default = float(df[feature].mean()) if feature in df.columns else 0
+    min_val = float(df[feature].min()) if feature in df.columns else 0
+    max_val = float(df[feature].max()) if feature in df.columns else 100
+    
+    return html.Div([
+        html.Label(nome_traduzido, style={'color': CORES['text'], 'fontSize': '14px', 'marginBottom': '5px'}),
+        html.Div([
+            dbc.Input(
+                type="number",
+                id=f"input-{feature}",
+                value=round(valor_default, 2),
+                step=0.01,
+                style={
+                    'backgroundColor': CORES['card_bg'], 
+                    'color': CORES['text'], 
+                    'border': f'1px solid {CORES["border"]}',
+                    'width': '100%'
+                }
+            ),
+            html.Small(
+                f"Faixa típica: {min_val:.2f} - {max_val:.2f}",
+                style={'color': CORES['text_secondary'], 'fontSize': '11px', 'display': 'block', 'marginTop': '3px'}
+            )
+        ])
+    ], style={'marginBottom': '15px'})
+    
+def formatar_nome_modelo(nome_modelo):
+   
+    if not nome_modelo or nome_modelo == 'Desconhecido':
+        return 'Modelo Não Identificado'
+    
+    # Remover números e underscore do final (ex: _20260621_220235)
+    import re
+    nome_limpo = re.sub(r'_\d{8}_\d{6}$', '', nome_modelo)
+    
+    mapeamento_modelos = {
+        'Random Forest': 'Random Forest',
+        'XGBoost': 'XGBoost',
+        'LightGBM': 'LightGBM',
+        'Gradient Boosting': 'Gradient Boosting',
+        'Logistic Regression': 'Regressão Logística',
+        'SVC': 'SVM (Support Vector Machine)',
+        'KNeighbors': 'K-Nearest Neighbors',
+        'Decision Tree': 'Árvore de Decisão',
+        'NeuralNetwork': 'Rede Neural'
+    }
+    
+       # Tentar encontrar correspondência
+    for key, value in mapeamento_modelos.items():
+        if key.lower() in nome_limpo.lower():
+            return value
+    
+    # Se não encontrar, retornar o nome limpo
+    return nome_limpo
+
+ 
+
+# @callback(
+#     Output('analysis-result', 'children'),
+#     Input('analyze-button', 'n_clicks'),
+#     [State(f'input-{f}', 'value') for f in ['hrv', 'resting_heart_rate', 'day_strain', 'sleep_hours', 'sleep_efficiency', 'sleep_quality', 'strain_per_sleep', 'hrv_rhr_ratio', 'hrv_ratio']],
+#     prevent_initial_call=True
+# )
+# def fazer_analise(n_clicks, hrv, resting_heart_rate, day_strain, sleep_hours, sleep_efficiency, sleep_quality, strain_per_sleep, hrv_rhr_ratio, hrv_ratio):
     """Faz a análise com os dados inseridos usando o modelo salvo"""
     
     if n_clicks is None:
