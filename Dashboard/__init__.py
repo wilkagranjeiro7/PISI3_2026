@@ -1,0 +1,1 @@
+"""Dashboard analítico de wearables."""

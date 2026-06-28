@@ -9,6 +9,10 @@ import pickle
 import warnings
 warnings.filterwarnings('ignore')
 
+DASHBOARD_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = DASHBOARD_DIR.parent
+DATA_DIR = DASHBOARD_DIR / 'data'
+
 class DataManager:
     """Gerencia TODO o carregamento e tratamento de dados"""
     
@@ -165,8 +169,8 @@ class DataManager:
         'chart_colors': ['#A8D8EA', '#B5E3B5', '#F5B7B1', '#FAD7A0', '#D5B8E8', '#A8E6CF']
     }
 
-    def __init__(self, local_path="data/dataset.pkl"):
-        self.local_path = Path(local_path)
+    def __init__(self, local_path=None):
+        self.local_path = Path(local_path) if local_path else DATA_DIR / 'dataset.pkl'
         self.df_raw = None
         self.df_clean = None
         self.df_translated = None
@@ -598,7 +602,7 @@ class DataManager:
     # 📥 CARREGAMENTO PRINCIPAL
     # ==========================================
     
-    def load_data(self, force_reload=True):
+    def load_data(self, force_reload=False):
         if not force_reload and self.local_path.exists():
             print(f"📦 Carregando dados do cache: {self.local_path}")
             try:
@@ -614,17 +618,31 @@ class DataManager:
                 print(f"⚠️ Erro ao carregar cache: {e}")
                 print("🔄 Recarregando dados originais...")
         
-        print("\n📂 Carregando dados do Excel...")
-        excel_files = list(Path(".").rglob("*.xlsx"))
-        if not excel_files:
-            print("❌ Nenhum arquivo XLSX encontrado!")
-            return None
-        
-        excel_file = excel_files[0]
-        print(f"📄 Arquivo encontrado: {excel_file.name}")
-        
+        print("\n📂 Procurando dataset...")
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+        source_files = [
+            PROJECT_ROOT / 'whoop_fitness_dataset_100k.xlsx',
+            DASHBOARD_DIR / 'whoop_fitness_dataset_100k.xlsx',
+            DATA_DIR / 'whoop_fitness_dataset_100k.xlsx',
+            DATA_DIR / 'dataset.xlsx',
+            DATA_DIR / 'dataset.parquet',
+        ]
+        source_file = next((file for file in source_files if file.exists()), None)
+
+        if source_file is None:
+            print("❌ Dataset não encontrado.")
+            print(f"   Adicione o XLSX na raiz: {PROJECT_ROOT / 'whoop_fitness_dataset_100k.xlsx'}")
+            print(f"   ou em: {DATA_DIR}")
+            return pd.DataFrame()
+
+        print(f"📄 Arquivo encontrado: {source_file}")
+
         try:
-            self.df_raw = pd.read_excel(excel_file, engine='openpyxl')
+            if source_file.suffix.lower() == '.parquet':
+                self.df_raw = pd.read_parquet(source_file)
+            else:
+                self.df_raw = pd.read_excel(source_file, engine='openpyxl')
             print(f"✅ {len(self.df_raw):,} registros carregados")
             self.df_clean = self._preprocess_dataframe(self.df_raw)
             self._calculate_stats(self.df_clean)

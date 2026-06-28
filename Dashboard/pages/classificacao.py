@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import dash_bootstrap_components as dbc
 from dash import html, dcc, Input, Output, callback, State
@@ -64,6 +64,12 @@ except ImportError:
 
 CORES = data_manager.get_cores()
 
+TARGET_COLUMNS = ['day_strain', 'hrv', 'hrv_baseline']
+LEAKAGE_FEATURES = {
+    'day_strain', 'hrv', 'hrv_baseline',
+    'strain_per_sleep', 'hrv_ratio', 'hrv_rhr_ratio'
+}
+
 METRIC_COLORS = [
     '#6C8EBF',  # Azul suave
     '#7CB3A1',  # Verde suave
@@ -117,7 +123,7 @@ CLASSIFIERS = {
         'model': LogisticRegression,
         'default': {'random_state': 42, 'max_iter': 1000, 'class_weight': 'balanced', 'C': 0.1},
         'family': 'Linear',
-        'shap_supported': True
+        'shap_supported': False
     },
     'Decision Tree': {
         'model': DecisionTreeClassifier,
@@ -292,15 +298,10 @@ def criar_sumario_shap(shap_values, feature_names):
 
 def create_layout(df):
     features_options = [
-        {'label': data_manager.traduzir_coluna('hrv'), 'value': 'hrv'},
         {'label': data_manager.traduzir_coluna('resting_heart_rate'), 'value': 'resting_heart_rate'},
-        {'label': data_manager.traduzir_coluna('day_strain'), 'value': 'day_strain'},
         {'label': data_manager.traduzir_coluna('sleep_hours'), 'value': 'sleep_hours'},
         {'label': data_manager.traduzir_coluna('sleep_efficiency'), 'value': 'sleep_efficiency'},
         {'label': 'Qualidade do Sono', 'value': 'sleep_quality'},
-        {'label': 'Strain por Hora de Sono', 'value': 'strain_per_sleep'},
-        {'label': 'HRV/HR Ratio', 'value': 'hrv_rhr_ratio'},
-        {'label': 'HRV Ratio', 'value': 'hrv_ratio'},
     ]
     
     models_options = [
@@ -332,14 +333,18 @@ def create_layout(df):
         html.Div([
             html.Div([
                 html.H3("Classificação", style={'fontWeight': 'normal', 'marginBottom': '30px', 'color': CORES['text']}),
-                html.P("Previsão de Risco de Overstrain Fisiológico", style={'fontSize': '12px', 'color': CORES['text_secondary'], 'marginTop': '-25px', 'marginBottom': '25px'}),
+                html.P(
+                    "Estimativa acadêmica de risco no mesmo dia, sem uso das variáveis que formam o alvo.",
+                    style={'fontSize': '12px', 'color': CORES['text_secondary'],
+                           'marginTop': '-25px', 'marginBottom': '25px'}
+                ),
                 
                 html.Div([
                     html.Label("CARACTERÍSTICAS", style={'color': CORES['text_secondary'], 'fontSize': '12px', 'textTransform': 'uppercase'}),
                     dbc.Checklist(
                         id='class-features',
                         options=features_options,
-                        value=['hrv', 'resting_heart_rate', 'day_strain', 'sleep_hours'],
+                        value=['resting_heart_rate', 'sleep_hours', 'sleep_efficiency', 'sleep_quality'],
                         inline=False,
                         switch=True,
                         style={'marginTop': '10px'}
@@ -444,19 +449,23 @@ def run_classification(n_clicks, features, selected_models, add_features, normal
         if add_features:
             df = criar_features_derivadas(df)
         
-        features_disponiveis = [f for f in features if f in df.columns]
+        features = features or []
+        features_disponiveis = [
+            feature for feature in features
+            if feature in df.columns and feature not in LEAKAGE_FEATURES
+        ]
         if not features_disponiveis:
             return html.P("Nenhuma feature selecionada está disponível no dataset", style={'color': CORES['danger']}), {}, {}
             
         # CORREÇÃO 2: VERIFICAÇÃO DE REQUISITOS PARA O TARGET DE OVERSTRAIN
-        requisitos_target = ['day_strain', 'hrv', 'hrv_baseline']
+        requisitos_target = TARGET_COLUMNS
         for col in requisitos_target:
             if col not in df.columns:
                 return html.P(f"Coluna necessária para cálculo de Overstrain ausente: {col}", style={'color': CORES['danger']}), {}, {}
         
         # Filtragem de dados sem nulos
         colunas_finais = features_disponiveis + requisitos_target
-        df_clean = df[list(set(colunas_finais))].dropna().copy()
+        df_clean = df[list(dict.fromkeys(colunas_finais))].dropna().copy()
         
         if len(df_clean) < 100:
             return html.P(f"Volume de dados muito baixo após dropna: {len(df_clean)} linhas", style={'color': CORES['warning']}), {}, {}
@@ -517,7 +526,7 @@ def run_classification(n_clicks, features, selected_models, add_features, normal
                     fpr, tpr = None, None
                     
                 accuracy = accuracy_score(y_test, y_pred)
-                f1 = f1_score(y_test, y_pred)
+                f1 = f1_score(y_test, y_pred, zero_division=0)
                 mcc = matthews_corrcoef(y_test, y_pred)
                 cm = confusion_matrix(y_test, y_pred)
                 
@@ -533,7 +542,7 @@ def run_classification(n_clicks, features, selected_models, add_features, normal
                     'accuracy': float(accuracy),
                     'f1_score': float(f1),
                     'mcc': float(mcc),
-                    'auc': float(auc_score) if auc_score else None,
+                    'auc': float(auc_score) if auc_score is not None else None,
                     'fpr': fpr.tolist() if fpr is not None else None,
                     'tpr': tpr.tolist() if tpr is not None else None,
                     'confusion_matrix': cm.tolist(),
@@ -562,7 +571,8 @@ def run_classification(n_clicks, features, selected_models, add_features, normal
                     'f1_score': best_model['f1_score'],
                     'mcc': best_model['mcc'],
                     'auc': best_model['auc'],
-                    'score': best_model['score']
+                    'score': best_model['score'],
+                    'feature_importance': best_model.get('feature_importance')
                 }
                 model_manager.salvar_modelo(
                     model=best_model_obj,
@@ -728,7 +738,7 @@ def run_classification(n_clicks, features, selected_models, add_features, normal
         
         metrics_cards = html.Div([
             html.H4(f"Algoritmo Selecionado: {best_model['model']}", style={'color': CORES['accent']}),
-            html.P(f"Abordagem: Previsão de Risco de Overstrain Fisiológico (Mediana)", style={'color': CORES['text_secondary']}),
+            html.P("Abordagem: classificação acadêmica de risco no mesmo dia (alvo pela mediana)", style={'color': CORES['text_secondary']}),
             mensagem_salvamento,
             dbc.Row([
                 dbc.Col(dbc.Card(dbc.CardBody([html.H4(f"{best_model['accuracy']:.1%}", style={'color': '#7CB3A1'}), html.P("Acurácia", style={'fontSize':'12px'})]), style={'backgroundColor': CORES['card_bg']}), md=3),

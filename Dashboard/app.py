@@ -1,3 +1,15 @@
+import sys
+from pathlib import Path
+
+# Permite iniciar pela raiz ou pela pasta Dashboard sem depender do diretório
+# atual do terminal.
+DASHBOARD_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = DASHBOARD_DIR.parent
+for path_entry in (DASHBOARD_DIR, PROJECT_ROOT):
+    path_str = str(path_entry)
+    if path_str not in sys.path:
+        sys.path.insert(0, path_str)
+
 from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
 from data_loader import data_manager
@@ -5,7 +17,7 @@ import webbrowser
 from threading import Timer
 from pages import (
     home, dataframes, filtros, agrupamentos, profiling,
-    parquet, plots, subplots, kmeans, classificacao, 
+    parquet, plots, kmeans, classificacao,
     eda, insights
 )
 
@@ -231,6 +243,11 @@ app.layout = dbc.Container([
     Input('url', 'pathname')
 )
 def display_page(pathname):
+    # Mantém o servidor acessível mesmo quando o dataset ainda não foi
+    # adicionado, exibindo na Home as instruções para corrigir isso.
+    if df is None or df.empty:
+        return home.create_layout(df)
+
     # Dicionário de rotas
     pages = {
         '/dataframes': dataframes.create_layout,
@@ -239,7 +256,6 @@ def display_page(pathname):
         '/profiling': profiling.create_layout,
         '/parquet': parquet.create_layout,
         '/plots': plots.create_layout,
-        '/subplots': subplots.create_layout,
         '/kmeans': kmeans.create_layout,
         '/classificacao': classificacao.create_layout,
         '/eda': eda.create_layout,
@@ -258,7 +274,7 @@ def open_browser():
     webbrowser.open_new("http://localhost:8050")
 
 
-if __name__ == '__main__':
+def run_app():
     import os
 
     print(f"\n{'='*60}")
@@ -270,3 +286,7 @@ if __name__ == '__main__':
         Timer(1, open_browser).start()
 
     app.run(debug=True, host='0.0.0.0', port=8050)
+
+
+if __name__ == '__main__':
+    run_app()

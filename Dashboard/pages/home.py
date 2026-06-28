@@ -24,6 +24,42 @@ COLORS = {
 def create_layout(df):
     """Página Home simplificada"""
 
+    if df is None or df.empty:
+        return html.Div([
+            html.H1(
+                "Dashboard FitMatch",
+                style={'textAlign': 'center', 'color': COLORS['text'], 'marginBottom': '20px'}
+            ),
+            html.Div([
+                html.H3("Dataset não encontrado", style={'color': COLORS['warning']}),
+                html.P(
+                    "O servidor está funcionando, mas precisa do arquivo de dados para liberar as análises.",
+                    style={'color': COLORS['text_secondary']}
+                ),
+                html.P(
+                    "Adicione whoop_fitness_dataset_100k.xlsx na raiz do projeto "
+                    "ou coloque dataset.xlsx/dataset.parquet em Dashboard/data.",
+                    style={'color': COLORS['text'], 'marginTop': '20px'}
+                ),
+                html.P(
+                    "Depois, encerre e execute novamente: python app.py",
+                    style={'color': COLORS['accent']}
+                ),
+            ], style={
+                'backgroundColor': COLORS['card_bg'],
+                'border': f"1px solid {COLORS['border']}",
+                'borderRadius': '10px',
+                'padding': '30px',
+                'maxWidth': '760px',
+                'margin': '0 auto'
+            })
+        ], style={
+            'backgroundColor': COLORS['background'],
+            'minHeight': '100vh',
+            'padding': '60px 30px',
+            'fontFamily': "'Segoe UI', 'Roboto', sans-serif"
+        })
+
     # ================== INFO DATASET ==================
     total_registros = len(df)
     total_colunas = len(df.columns)

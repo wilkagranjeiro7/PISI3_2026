@@ -4,14 +4,12 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import dash_bootstrap_components as dbc
 from dash import html, dcc, Input, Output, callback, State
 import pandas as pd
 import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
 from data_loader import data_manager
 from model_manager import model_manager
 
@@ -23,30 +21,24 @@ CORES = data_manager.get_cores()
 # ==================================================
 # FEATURES: separar brutas (input manual) de derivadas (calculadas)
 # ==================================================
-FEATURES_BRUTAS = ['hrv', 'resting_heart_rate', 'day_strain',
-                    'sleep_hours', 'sleep_efficiency', 'sleep_quality']
+FEATURES_BRUTAS = [
+    'hrv', 'resting_heart_rate', 'day_strain',
+    'sleep_hours', 'sleep_efficiency'
+]
 
-FEATURES_DERIVADAS = ['strain_per_sleep', 'hrv_rhr_ratio', 'hrv_ratio']
+FEATURES_DERIVADAS = [
+    'sleep_quality', 'strain_per_sleep', 'hrv_rhr_ratio', 'hrv_ratio'
+]
 
 
-def calcular_features_derivadas(hrv, resting_heart_rate, day_strain, sleep_hours):
-    """
-    Calcula as features derivadas a partir dos valores brutos.
-    IMPORTANTE: essas fórmulas precisam ser IDÊNTICAS às usadas
-    na criação do dataset/treinamento do modelo. Confira no seu
-    notebook/script de pré-processamento se a fórmula bate.
-    """
-    hrv_rhr_ratio = hrv / resting_heart_rate if resting_heart_rate > 0 else 0
-    strain_per_sleep = day_strain / sleep_hours if sleep_hours > 0 else 0
+def calcular_features_derivadas(hrv, resting_heart_rate, day_strain,
+                                sleep_hours, sleep_efficiency):
+    """Replica as fórmulas usadas pelo DataManager no treinamento."""
+    sleep_quality = sleep_hours * (sleep_efficiency / 100)
+    strain_per_sleep = day_strain / (sleep_hours + 0.1)
+    hrv_rhr_ratio = hrv / (resting_heart_rate + 1)
 
-    # ATENÇÃO: ajuste esta fórmula conforme a definição original do seu dataset.
-    # Um exemplo comum é hrv_ratio = hrv atual / hrv médio histórico do usuário.
-    # Como não temos um "histórico" aqui, uma aproximação razoável é usar
-    # a própria relação hrv/rhr normalizada, ou repetir hrv_rhr_ratio.
-    # Troque pela fórmula real usada no treino.
-    hrv_ratio = hrv_rhr_ratio
-
-    return strain_per_sleep, hrv_rhr_ratio, hrv_ratio
+    return sleep_quality, strain_per_sleep, hrv_rhr_ratio
 
 
 # ==================================================
@@ -75,12 +67,18 @@ def create_layout(df):
             ], style={'maxWidth': '800px', 'margin': '0 auto', 'padding': '40px 20px'})
         ], style={'backgroundColor': CORES['background'], 'minHeight': '100vh', 'padding': '20px'})
 
-    # Criar inputs SOMENTE para as features brutas (não para as derivadas)
-    inputs = []
-    for feature in features:
-        if feature in FEATURES_DERIVADAS:
-            continue  # essas serão calculadas automaticamente, sem input manual
+    # Todos os IDs usados pelo callback permanecem no layout. Campos que não
+    # participam do modelo atual ficam ocultos, evitando callbacks inválidos.
+    required_raw = set(features)
+    if 'sleep_quality' in features:
+        required_raw.update({'sleep_hours', 'sleep_efficiency'})
+    if 'strain_per_sleep' in features:
+        required_raw.update({'day_strain', 'sleep_hours'})
+    if 'hrv_rhr_ratio' in features:
+        required_raw.update({'hrv', 'resting_heart_rate'})
 
+    inputs = []
+    for feature in FEATURES_BRUTAS:
         nome_traduzido = data_manager.traduzir_coluna(feature)
         valor_default = float(df[feature].mean()) if feature in df.columns else 0
         min_val = float(df[feature].min()) if feature in df.columns else 0
@@ -106,7 +104,10 @@ def create_layout(df):
                     style={'color': CORES['text_secondary'], 'fontSize': '11px', 'display': 'block', 'marginTop': '3px'}
                 )
             ])
-        ], style={'marginBottom': '15px'}))
+        ], style={
+            'marginBottom': '15px',
+            'display': 'block' if feature in required_raw else 'none'
+        }))
 
     return html.Div([
         html.Div([
@@ -265,7 +266,7 @@ def calcular_tendencia(dados_atuais, df_referencia, features):
     prevent_initial_call=True
 )
 def fazer_analise(n_clicks, hrv, resting_heart_rate, day_strain,
-                   sleep_hours, sleep_efficiency, sleep_quality):
+                   sleep_hours, sleep_efficiency):
     """Faz a análise com os dados inseridos usando o modelo salvo"""
     if n_clicks is None:
         return html.Div(
@@ -288,11 +289,10 @@ def fazer_analise(n_clicks, hrv, resting_heart_rate, day_strain,
         day_strain = float(day_strain) if day_strain is not None else 0.0
         sleep_hours = float(sleep_hours) if sleep_hours is not None else 0.0
         sleep_efficiency = float(sleep_efficiency) if sleep_efficiency is not None else 0.0
-        sleep_quality = float(sleep_quality) if sleep_quality is not None else 0.0
 
-        # Features derivadas SEMPRE calculadas, nunca digitadas pelo usuário
-        strain_per_sleep, hrv_rhr_ratio, hrv_ratio = calcular_features_derivadas(
-            hrv, resting_heart_rate, day_strain, sleep_hours
+        # Features derivadas sempre calculadas com as mesmas fórmulas do treino.
+        sleep_quality, strain_per_sleep, hrv_rhr_ratio = calcular_features_derivadas(
+            hrv, resting_heart_rate, day_strain, sleep_hours, sleep_efficiency
         )
 
         valores_input = {
@@ -303,8 +303,7 @@ def fazer_analise(n_clicks, hrv, resting_heart_rate, day_strain,
             'sleep_efficiency': sleep_efficiency,
             'sleep_quality': sleep_quality,
             'strain_per_sleep': strain_per_sleep,
-            'hrv_rhr_ratio': hrv_rhr_ratio,
-            'hrv_ratio': hrv_ratio
+            'hrv_rhr_ratio': hrv_rhr_ratio
         }
 
         dados = {feature: valores_input.get(feature, 0.0) for feature in features}
@@ -464,6 +463,10 @@ def fazer_analise(n_clicks, hrv, resting_heart_rate, day_strain,
                 ], style={'backgroundColor': 'rgba(255,255,255,0.05)', 'padding': '15px', 'borderRadius': '8px'})
             ]),
             html.Hr(style={'borderColor': CORES['border']}),
+            html.P(
+                "Resultado experimental para fins acadêmicos; não substitui avaliação médica.",
+                style={'color': CORES['warning'], 'fontSize': '12px'}
+            ),
             html.H5("📋 Valores analisados", style={'color': CORES['text']}),
             html.Div([
                 html.Div([

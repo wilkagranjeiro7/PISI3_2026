@@ -1,124 +1,138 @@
-# Análise Preditiva de Recuperação Fisiológica e Overstrain com Machine Learning
+# Análise Preditiva de Recuperação Fisiológica e Overstrain
 
-Repositório voltado ao desenvolvimento de um ecossistema de Data Analytics, Clustering e Machine Learning para detecção de sobrecarga física (*overstrain*) utilizando dados de sensores vestíveis (*wearables*). Projeto desenvolvido para a disciplina de **Projeto Interdisciplinar para Sistemas de Informação III (PISI3 - 2026)**.
+Projeto acadêmico de Data Analytics, clustering e machine learning aplicado a dados de dispositivos vestíveis. O dashboard explora indicadores de sono, recuperação, frequência cardíaca e carga de treino, além de oferecer segmentação de usuários e uma classificação experimental de risco de overstrain.
 
-## Sobre o Projeto
+> **Aviso:** os resultados e recomendações deste projeto têm finalidade exclusivamente acadêmica e não substituem avaliação médica ou acompanhamento profissional.
 
-O objetivo deste projeto é processar, analisar e modelar dados fisiológicos longitudinais para identificar padrões de fadiga crônica e prever o risco de **overstrain** — um estado de saturação biológica que precede lesões e queda severa de performance no esporte. 
+## Funcionalidades
 
-A arquitetura do sistema foi projetada em módulos analíticos utilizando **Dash/Plotly**, contemplando:
-1. **Módulo de Data Exploration & Profiling:** Diagnóstico estatístico automatizado e análise descritiva da integridade da base de dados.
-2. **Módulo de Agrupamento (Clustering):** Algoritmos não-supervisionados para segmentação de perfis comportamentais e físicos de atletas.
-3. **Pipeline de Classificação Supervisionada:** Ambiente sandbox para engenharia de features, tratamento de vazamento de dados, treinamento e validação cruzada de múltiplos modelos preditivos.
-4. **Simulador de Insights & Heurísticas:** Interface interativa para testar a resposta do modelo treinado a partir de novos vetores de entrada de variáveis vitais.
+- carregamento e limpeza do dataset;
+- detecção e relatório de valores ausentes e outliers;
+- análise exploratória e visualizações interativas;
+- filtros e agrupamentos por características demográficas e esportivas;
+- matriz de correlação e análises de Pareto;
+- segmentação com MiniBatch K-Means, PCA, cotovelo e silhueta;
+- comparação de modelos de classificação;
+- métricas como acurácia, F1, MCC, AUC-ROC e matriz de confusão;
+- explicabilidade opcional com SHAP;
+- persistência do melhor modelo para a página de Insights;
+- benchmark real de tamanho e leitura entre CSV e Parquet.
 
-## Conjunto de Dados (Dataset)
+## Dataset
 
-A base de estudo é o [WHOOP Fitness Dataset](https://www.kaggle.com/datasets/likithagedipudi/whoop-fitness-dataset/data) (via Kaggle).
-* **Volume:** ~100.000 registros diários estruturados.
-* **Amostragem:** Dados longitudinais de 286 usuários únicos anonimizados.
-* **Métricas Fisiológicas Core:** Variabilidade da Frequência Cardíaca (VFC/HRV), Frequência Cardíaca em Repouso (RHR), Carga de Treino acumulada (`day_strain`), Horas Totais de Sono e Eficiência do Sono.
+O projeto utiliza o [WHOOP Fitness Dataset](https://www.kaggle.com/datasets/likithagedipudi/whoop-fitness-dataset/data), com aproximadamente 100 mil registros.
 
-## 🗂️ Estrutura do projeto
+O dataset não é versionado no Git por tamanho e licenciamento. Depois de obtê-lo na fonte original, use uma destas localizações:
 
-```
+- `Dashboard/whoop_fitness_dataset_100k.xlsx`;
+- `whoop_fitness_dataset_100k.xlsx` na raiz;
+- `Dashboard/data/dataset.xlsx`;
+- `Dashboard/data/dataset.parquet`.
+
+Na primeira execução, o sistema cria `Dashboard/data/dataset.pkl` como cache local. Dados, cache e modelos treinados são ignorados pelo Git.
+
+## Tecnologias
+
+- Python 3.10 a 3.12;
+- Dash e Dash Bootstrap Components;
+- Pandas, NumPy e SciPy;
+- Plotly;
+- Scikit-learn;
+- OpenPyXL e PyArrow;
+- Joblib.
+
+XGBoost, LightGBM, CatBoost e SHAP são opcionais. Quando instalados, são detectados automaticamente.
+
+## Estrutura
+
+```text
 PISI3_2026/
-├── app.py                      # Ponto de entrada e inicialização da aplicação Dash
-├── data_loader.py              # Singleton/Manager de carga, limpeza e engenharia de features
-├── model_manager.py            # Orquestrador de serialização (salvamento/carga) de modelos preditivos
-├── fitness_dashboard.txt       # Backlog de especificações e anotações técnicas do dashboard
-├── requirements.txt            # Dependências e bibliotecas do ecossistema Python
-├── whoop_fitness_dataset_100k.xlsx # Arquivo bruto/fonte de dados original
-│
-├── Dashboard/                  # Módulos core de visualização de dados
-│   └── data/
-│       └── dataset.parquet     # Dataset persistido em formato colunar de alta performance
-│
-├── pages/                      # Arquitetura de páginas e views multipáginas do Dash
-│   ├── agrupamentos.py        # View para algoritmos não-supervisionados (Clustering)
-│   ├── classificacao.py       # View para treino, pipeline e métricas supervisionadas
-│   ├── dataframes.py          # View para visualização tabular e auditoria dos dados
-│   ├── eda.py                 # View de Análise Exploratória de Dados
-│   ├── filtros.py             # Componentes modulares de filtragem global de dados
-│   ├── home.py                # Dashboard principal e Hub de navegação
-│   ├── insights.py            # Motor de tomada de decisão e simulação de prontidão
-│   ├── kmeans.py              # Implementações lógicas do agrupamento K-Means
-│   ├── parquet.py             # Utilitários para conversão e otimização em formato Parquet
-│   ├── plots.py               # Fábrica de gráficos, layouts e estilizações Plotly
-│   └── profiling.py           # Relatórios de estatística descritiva e integridade dos dados
-│
-└── saved_models/               # Modelos binários serializados (.pkl) gerados pelo model_manager
+├── app.py                 # Ponto de entrada
+├── model_manager.py       # Persistência dos modelos
+├── requirements.txt       # Dependências
+├── Dashboard/
+│   ├── app.py             # Aplicação e rotas
+│   ├── data_loader.py     # Carga, limpeza e features
+│   ├── data/README.md     # Orientação para o dataset
+│   └── pages/             # Páginas analíticas
+└── Analises/              # Gráficos exportados
 ```
 
-##  Como Executar o Ambiente
+## Instalação no Windows
 
-1. **Clone o repositório:**
-```bash
-   git clone [git@github.com:wilkagranjeiro7/PISI3_2026.git]
-   cd PISI3_2026
+No PowerShell, a partir da raiz:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-2. **Configure e ative o ambiente virtual:**
-```bash
-    python -m venv venv
-    # No Windows:
-    venv\Scripts\activate
-    # No Linux/Mac:
-    source venv/bin/activate
-```
+Adicione o dataset em uma das localizações documentadas e inicie:
 
-3. **Instale as dependências:**
-```bash
-    pip install -r requirements.txt
-```
-4. **Inicie o servidor local do Dashboard:**
-```bash
+```powershell
 python app.py
 ```
-Acesse `http://localhost:8050` no navegador.
 
+Acesse [http://localhost:8050](http://localhost:8050).
 
-## 🧠 Pipeline de Machine Learning
-O pipeline matemático de processamento adiciona dinamicamente as seguintes variáveis derivadas ao conjunto de dados:
+## Preparação dos dados
 
-### Features derivadas
-A partir das colunas brutas do dataset, são calculadas automaticamente:
-- `Qualidade do Sono(sleep_quality)` = `sleep_hours * (sleep_efficiency / 100)`
-- `Strain por Hora de Sono(strain_per_sleep)` = `day_strain / (sleep_hours + 0.1)`
-- `Razão VFC(hrv_ratio)` = `hrv / (hrv_baseline + 1)`
-- `Razão RHR(rhr_ratio)` = `resting_heart_rate / (rhr_baseline + 1)`
-- `Proporção Cardio-Fisiológica(hrv_rhr_ratio)` = `hrv / (resting_heart_rate + 1)`
+O `DataManager`:
 
-### Rótulo (target) de Overstrain
+1. converte datas e valores numéricos;
+2. valida faixas fisiologicamente plausíveis;
+3. registra outliers substituídos por valores ausentes;
+4. remove duplicidades;
+5. cria as features derivadas;
+6. calcula estatísticas descritivas;
+7. salva um cache local para as próximas execuções.
+
+Features derivadas:
+
+- `sleep_quality = sleep_hours * (sleep_efficiency / 100)`;
+- `strain_per_sleep = day_strain / (sleep_hours + 0.1)`;
+- `hrv_ratio = hrv / (hrv_baseline + 1)`;
+- `rhr_ratio = resting_heart_rate / (rhr_baseline + 1)`;
+- `hrv_rhr_ratio = hrv / (resting_heart_rate + 1)`.
+
+## Classificação de overstrain
+
+O alvo acadêmico representa risco no mesmo dia:
+
 ```python
-overstrain = (day_strain > mediana(day_strain)) AND (hrv < hrv_baseline)
+overstrain = (day_strain > mediana(day_strain)) & (hrv < hrv_baseline)
 ```
 
-⚠️ **Atenção a vazamento de dados (data leakage):** como o rótulo é construído a partir de `day_strain`, `hrv` e `hrv_baseline`, essas colunas — e qualquer feature derivada delas (`hrv_ratio`, `hrv_rhr_ratio`, `strain_per_sleep`) — são **bloqueadas como features de entrada do modelo**. Usá-las inflaria artificialmente a acurácia (chegamos a observar 100% de acurácia/F1 antes da correção, justamente por esse motivo).
+Para evitar vazamento de dados, o modelo bloqueia como entradas `day_strain`, `hrv`, `hrv_baseline` e as features derivadas diretamente dessas variáveis. A interface utiliza frequência cardíaca em repouso e indicadores de sono.
 
-A página de Classificação permite escolher entre dois modos de alvo temporal:
-- **Dia seguinte** (recomendado): prevê se haverá overstrain amanhã, com base nos dados de hoje — evita qualquer ambiguidade de causalidade.
-- **Mesmo dia**: prevê o overstrain do dia atual, usando apenas features que não compõem o rótulo.
+Modelos principais:
 
-### Modelos disponíveis
-Random Forest, Gradient Boosting, Regressão Logística, Árvore de Decisão, KNN, AdaBoost (e XGBoost/LightGBM/CatBoost, se instalados).
+- Random Forest;
+- Gradient Boosting;
+- Regressão Logística;
+- Árvore de Decisão;
+- KNN;
+- AdaBoost.
 
-O melhor modelo é selecionado por um score ponderado (AUC, F1, MCC, acurácia) e salvo automaticamente em `saved_models/` para uso na página de Insights.
+O conjunto é dividido aleatoriamente em 80% para treino e 20% para teste, com estratificação e semente fixa. Essa avaliação é demonstrativa: por se tratar de dados longitudinais, trabalhos futuros devem preferir validação temporal ou separação por usuário.
 
-## 🔍 Achados metodológicos
+## Reprodutibilidade
 
-Durante o desenvolvimento, identificamos que a definição original do rótulo de overstrain causava **vazamento de dados** quando `day_strain`/`hrv` eram usados como features, resultando em métricas artificialmente perfeitas (100% de acurácia). Após a correção (bloqueio dessas colunas + avaliação com alvo no dia seguinte), as métricas caíram para próximo do nível aleatório (AUC ≈ 0.50), indicando que **as features de sono e frequência cardíaca em repouso isoladamente não têm poder preditivo forte sobre o overstrain do dia seguinte** neste dataset.
+- O dataset bruto, o cache e `saved_models/` não são enviados ao GitHub.
+- Para refazer todo o processamento, exclua `Dashboard/data/dataset.pkl` e reinicie.
+- Para usar a página de Insights após mudanças no pipeline, treine novamente um modelo na página Classificação.
+- O benchmark de CSV e Parquet é medido no ambiente local; os resultados podem variar entre máquinas.
 
-Esse resultado é documentado como parte da análise crítica do projeto, e motivou a exploração de abordagens alternativas (ex.: alvo no mesmo dia, agregações de múltiplos dias).
+## Equipe
 
-## 👥 Equipe
+- Carlos Jonathan de Lima Malta
+- Kassiane Gomes da Silva
+- Leandro Augusto Barboza da Silva
+- Leonardo Cassio da Silva Braz
+- Wilka Vitória Granjeiro do Nascimento
 
-_Carlos Jonathan de Lima Malta_
-_Kassiane Gomes da Silva_
-_Leandro Augusto Barboza da Silva_
-_Leonardo Cassio da Silva Braz_
-_Wilka Vitória Granjeiro do Nascimento_
+## Contexto acadêmico
 
-## 📄 Licença
-
-Projeto acadêmico desenvolvido para a disciplina de Projeto Interdisciplinar para Sistemas de Informação III
+Desenvolvido para a disciplina de Projeto Interdisciplinar para Sistemas de Informação III — PISI3, 2026.

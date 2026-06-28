@@ -2,12 +2,12 @@
 import joblib
 import os
 import json
-import pandas as pd
-import numpy as np
 from datetime import datetime
 
 class ModelManager:
-    def __init__(self, model_dir='saved_models'):
+    def __init__(self, model_dir=None):
+        if model_dir is None:
+            model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saved_models')
         self.model_dir = model_dir
         os.makedirs(model_dir, exist_ok=True)
         

@@ -1,15 +1,32 @@
-# Python
-__pycache__/
-*.pyc
+# Ambientes Python
+.venv/
 venv/
 
-# Dados (Arquivos que não devem ir para o GitHub)
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Dados e artefatos gerados
 data/
-*.parquet
+Dashboard/data/*
+!Dashboard/data/
+!Dashboard/data/README.md
 *.xlsx
 *.csv
+*.parquet
+*.pkl
+saved_models/
+benchmark_parquet.csv
 
-# Sistema / Editor
+# Build, logs e editores
+build/
+dist/
+*.egg-info/
+*.log
 .DS_Store
 .ipynb_checkpoints/
 .vscode/
+.idea/
