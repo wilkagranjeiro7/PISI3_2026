@@ -1,11 +1,13 @@
+
 from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
 from data_loader import data_manager
 import webbrowser
 from threading import Timer
+
 from pages import (
     home, dataframes, filtros, agrupamentos, profiling,
-    parquet, plots, subplots, kmeans, classificacao, 
+    parquet, plots, kmeans, classificacao,
     eda, insights
 )
 
@@ -239,7 +241,7 @@ def display_page(pathname):
         '/profiling': profiling.create_layout,
         '/parquet': parquet.create_layout,
         '/plots': plots.create_layout,
-        '/subplots': subplots.create_layout,
+    
         '/kmeans': kmeans.create_layout,
         '/classificacao': classificacao.create_layout,
         '/eda': eda.create_layout,
