@@ -5,8 +5,8 @@ import webbrowser
 from threading import Timer
 from pages import (
     home, dataframes, filtros, agrupamentos, profiling,
-    parquet, plots, subplots, kmeans, classificacao, 
-    eda, insights
+    parquet, plots, kmeans, classificacao,
+    eda, insights, pipeline_carlos
 )
 
 
@@ -239,11 +239,11 @@ def display_page(pathname):
         '/profiling': profiling.create_layout,
         '/parquet': parquet.create_layout,
         '/plots': plots.create_layout,
-        '/subplots': subplots.create_layout,
         '/kmeans': kmeans.create_layout,
         '/classificacao': classificacao.create_layout,
         '/eda': eda.create_layout,
         '/insights': insights.create_layout,
+        '/pipeline-carlos': pipeline_carlos.create_layout,
     }
     
     # Página padrão (home)
