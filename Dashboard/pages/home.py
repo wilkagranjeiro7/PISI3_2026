@@ -163,6 +163,12 @@ def create_layout(df):
                 "Pipeline com XAI e Balanceamento",
                 "brain"
             ),
+            card(
+                "Pipeline Carlos",
+                "/pipeline-carlos",
+                "SMOTE, classificação e explicabilidade SHAP",
+                "chart-column"
+            ),
         ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
     ])
 
