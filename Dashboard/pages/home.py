@@ -151,9 +151,19 @@ def create_layout(df):
 
         # LINHA 4 - INSIGHTS (DESTAQUE)
         html.Div([
-            card("Insights", "/insights", "Análise de recuperação e recomendações personalizadas", "lightbulb"),
+            card(
+                "Insights",
+                "/insights",
+                "Análise de recuperação e recomendações personalizadas",
+                "lightbulb"
+            ),
+            card(
+                "Classificação Avançada",
+                "/advanced-classification",
+                "Pipeline com XAI e Balanceamento",
+                "brain"
+            ),
         ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
-
     ])
 
     # ================== RODAPÉ ==================

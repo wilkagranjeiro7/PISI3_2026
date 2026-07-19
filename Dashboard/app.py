@@ -1,4 +1,8 @@
-
+from pages import (
+    home, dataframes, filtros, agrupamentos, profiling,
+    parquet, plots, kmeans, classificacao,
+    eda, insights, advanced_classification
+)
 from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
 from data_loader import data_manager
@@ -246,6 +250,7 @@ def display_page(pathname):
         '/classificacao': classificacao.create_layout,
         '/eda': eda.create_layout,
         '/insights': insights.create_layout,
+        '/advanced-classification': advanced_classification.create_layout,
     }
     
     # Página padrão (home)

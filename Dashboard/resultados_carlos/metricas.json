@@ -1,0 +1,63 @@
+{
+  "modelo": "HistGradientBoostingClassifier",
+  "accuracy": 0.7159,
+  "balanced_accuracy": 0.7155796479719875,
+  "precision": 0.7084412221646815,
+  "recall": 0.7046461316575667,
+  "f1": 0.7065385807251316,
+  "roc_auc": 0.784860169607006,
+  "mcc": 0.43123089593186176,
+  "confusion_matrix": [
+    [
+      7478,
+      2815
+    ],
+    [
+      2867,
+      6840
+    ]
+  ],
+  "baseline_3va_model": "LightGBM",
+  "baseline_3va_accuracy": 0.658,
+  "baseline_3va_context": "Resultado relatado na 3VA e usado apenas como referência descritiva, pois o protocolo final não é idêntico ao anterior.",
+  "accuracy_difference_pp": 5.789999999999996,
+  "target_column": "recovery_score",
+  "target_name": "boa_recuperacao",
+  "target_rule": "recovery_score > 66",
+  "features": [
+    "day_strain",
+    "sleep_hours",
+    "sleep_efficiency",
+    "hrv",
+    "resting_heart_rate",
+    "age",
+    "weight_kg",
+    "height_cm",
+    "sleep_performance",
+    "light_sleep_hours",
+    "rem_sleep_hours",
+    "deep_sleep_hours",
+    "wake_ups",
+    "time_to_fall_asleep_min",
+    "hrv_baseline",
+    "rhr_baseline",
+    "respiratory_rate",
+    "skin_temp_deviation"
+  ],
+  "records_total": 100000,
+  "records_train_before_smote": 80000,
+  "records_train_after_smote": 82340,
+  "records_test": 20000,
+  "train_distribution_before_smote": {
+    "0": 41170,
+    "1": 38830
+  },
+  "train_distribution_after_smote": {
+    "0": 41170,
+    "1": 41170
+  },
+  "test_distribution": {
+    "0": 10293,
+    "1": 9707
+  }
+}
