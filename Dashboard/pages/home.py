@@ -151,10 +151,25 @@ def create_layout(df):
 
         # LINHA 4 - INSIGHTS (DESTAQUE)
         html.Div([
-            card("Insights", "/insights", "Análise de recuperação e recomendações personalizadas", "lightbulb"),
-            card("Pipeline Carlos", "/pipeline-carlos", "SMOTE, classificação e explicabilidade SHAP", "chart-column"),
+            card(
+                "Insights",
+                "/insights",
+                "Análise de recuperação e recomendações personalizadas",
+                "lightbulb"
+            ),
+            card(
+                "Classificação Avançada",
+                "/advanced-classification",
+                "Pipeline com XAI e Balanceamento",
+                "brain"
+            ),
+            card(
+                "Pipeline Carlos",
+                "/pipeline-carlos",
+                "SMOTE, classificação e explicabilidade SHAP",
+                "chart-column"
+            ),
         ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
-
     ])
 
     # ================== RODAPÉ ==================
