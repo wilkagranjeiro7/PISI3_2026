@@ -1,0 +1,19 @@
+﻿feature,variavel,mean_abs_shap
+resting_heart_rate,Frequência cardíaca em repouso,0.5513146986808135
+hrv,Variabilidade cardíaca (HRV),0.4811594145617641
+rhr_baseline,FC de repouso de referência,0.47048029837987826
+hrv_baseline,HRV de referência,0.3496286211291613
+day_strain,Esforço diário,0.29200353129561946
+age,Idade,0.10465640645454968
+height_cm,Altura,0.09233514383949297
+weight_kg,Peso,0.06931633007187381
+sleep_efficiency,Eficiência do sono,0.011193785433308708
+rem_sleep_hours,Sono REM,0.0053442587990578105
+sleep_hours,Horas de sono,0.004373766436232507
+deep_sleep_hours,Sono profundo,0.004138394463656129
+light_sleep_hours,Sono leve,0.003680339009087338
+skin_temp_deviation,Desvio da temperatura da pele,0.0027863670084893348
+respiratory_rate,Frequência respiratória,0.00043730218031451477
+time_to_fall_asleep_min,Tempo para adormecer,0.0003943375779293576
+wake_ups,Despertares,0.00038486078233683735
+sleep_performance,Desempenho do sono,0.0
