@@ -1,0 +1,84 @@
+{
+  "nome": "Random Forest_20260719_221947",
+  "data_criacao": "2026-07-19T22:19:47.697702",
+  "features": [
+    "hrv",
+    "resting_heart_rate"
+  ],
+  "metricas": {
+    "accuracy": 0.42601115760111574,
+    "f1_score": 0.49181947274186577,
+    "mcc": 0.11758350789762784,
+    "auc": 0.6126276518992911,
+    "score": 0.4587147199219133,
+    "feature_importance": [
+      0.5357313652686977,
+      0.46426863473130237
+    ],
+    "overfitting_diagnostic": {
+      "status": "\u2705 Modelo Generaliza Bem",
+      "cor": "#10B981",
+      "icone": "\ud83d\udfe2",
+      "train_acc": 0.6221850296627266,
+      "test_acc": 0.600976290097629,
+      "diff": 0.021208739565097612,
+      "train_f1": 0.4775484057611638,
+      "test_f1": 0.4482160077145612,
+      "diff_f1": 0.029332398046602592,
+      "mensagem": "Diferen\u00e7a de 2.1% entre treino e teste - Modelo consistente",
+      "recomendacao": "Modelo pronto para uso"
+    },
+    "cv_mean": 0.5988242785058391,
+    "cv_std": 0.0021654859967082615,
+    "melhor_limiar": 0.4122448979591836,
+    "referencias": {
+      "alta_recuperacao": {
+        "hrv": 0.19825413952169452,
+        "resting_heart_rate": -0.19160422130487853
+      },
+      "baixa_recuperacao": {
+        "hrv": -0.09532048174658479,
+        "resting_heart_rate": 0.08882292082449161
+      },
+      "percentis": {
+        "hrv": {
+          "p25": -0.7743141083769693,
+          "p50": -0.036452816498213345,
+          "p75": 0.7417889440903246,
+          "min": -2.03345054178201,
+          "max": 2.738786669374121,
+          "mean": -0.0028729258359099508,
+          "std": 1.0023231068070941
+        },
+        "resting_heart_rate": {
+          "p25": -0.7870231645595762,
+          "p50": -0.05555797708650658,
+          "p75": 0.772718779316823,
+          "min": -1.8842209457691814,
+          "max": 3.0101417057050366,
+          "mean": 0.0005155467440030231,
+          "std": 0.9977041108870435
+        }
+      },
+      "target_stats": {
+        "alta_recuperacao_count": 21073,
+        "baixa_recuperacao_count": 45846,
+        "total_count": 66919,
+        "alta_percentual": 0.3149030917975463
+      }
+    },
+    "informacoes_treino": {
+      "n_amostras": 66919,
+      "n_features": 2,
+      "features_utilizadas": [
+        "hrv",
+        "resting_heart_rate"
+      ],
+      "normalizacao_utilizada": true,
+      "test_size": 0.3,
+      "val_size": 0.15,
+      "random_state": 42,
+      "cross_validation": true
+    }
+  }
+}
