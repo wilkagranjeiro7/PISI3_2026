@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from pages import (
     home, dataframes, filtros, agrupamentos, profiling,
     parquet, plots, kmeans, classificacao,
@@ -10,7 +9,6 @@ from data_loader import data_manager
 import webbrowser
 from threading import Timer
 
-=======
 import sys
 import os
 import webbrowser
@@ -48,7 +46,6 @@ from pages import (
 # ==========================================================
 # CONFIGURAÇÃO DO APP
 # ==========================================================
->>>>>>> 74f43c5 (Implementa gráfico SHAP e melhorias na pipeline de treinamento)
 
 app = Dash(
     __name__,
@@ -301,7 +298,6 @@ app.layout = dbc.Container(
 def display_page(pathname):
 
     pages = {
-<<<<<<< HEAD
         '/dataframes': dataframes.create_layout,
         '/filtros': filtros.create_layout,
         '/agrupamentos': agrupamentos.create_layout,
@@ -314,7 +310,6 @@ def display_page(pathname):
         '/insights': insights.create_layout,
         '/advanced-classification': advanced_classification.create_layout,
         '/pipeline-carlos': pipeline_carlos.create_layout,
-=======
 
         "/": home.create_layout,
 
@@ -340,7 +335,6 @@ def display_page(pathname):
 
         "/insights": insights.create_layout,
 
->>>>>>> 74f43c5 (Implementa gráfico SHAP e melhorias na pipeline de treinamento)
     }
 
 
