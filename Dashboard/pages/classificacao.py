@@ -4,21 +4,45 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+ROOT_DIR = os.path.dirname(
+    os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
+)
+
+sys.path.insert(0, ROOT_DIR)
 
 import dash_bootstrap_components as dbc
 from dash import html, dcc, Input, Output, callback, State, dash
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold, learning_curve, GridSearchCV
-from sklearn.metrics import (
-    accuracy_score, f1_score, matthews_corrcoef, roc_auc_score,
-    confusion_matrix, roc_curve, precision_score, recall_score
+
+from sklearn.model_selection import (
+    train_test_split,
+    cross_val_score,
+    StratifiedKFold,
+    learning_curve,
+    GridSearchCV
 )
+
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    matthews_corrcoef,
+    roc_auc_score,
+    confusion_matrix,
+    roc_curve,
+    precision_score,
+    recall_score
+)
+
 from sklearn.ensemble import (
-    RandomForestClassifier, GradientBoostingClassifier, 
+    RandomForestClassifier,
+    GradientBoostingClassifier,
     AdaBoostClassifier
 )
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -26,13 +50,15 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans
+
 import pandas as pd
 import numpy as np
 import warnings
+
 warnings.filterwarnings('ignore')
+
 from data_loader import data_manager
 from model_manager import model_manager
-
 # ==================================================
 # TENTAR IMPORTAR MODELOS ADICIONAIS
 # ==================================================
