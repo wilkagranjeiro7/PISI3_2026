@@ -1,4 +1,4 @@
-# 🚀 FitMatch: Análise Preditiva de Recuperação Fisiológica e Machine Learning
+# 🚀 FitMatch: Análise Preditiva de Desempenho e Machine Learning
 
 > Repositório oficial do ecossistema de Data Analytics, Balanceamento de Dados (SMOTE) e Machine Learning voltado à previsão de recuperação (*recovery*) de atletas utilizando dados de sensores vestíveis (*wearables*). Projeto desenvolvido para a disciplina de **Projeto Interdisciplinar para Sistemas de Informação III (PISI3 - UFRPE, 2026)**.
 
@@ -6,12 +6,21 @@
 
 ## 📌 Sobre o Projeto
 
-O **FitMatch** é uma aplicação inteligente focada na recomendação de exercícios físicos e monitoramento de performance esportiva. O principal objetivo é processar, analisar e modelar dados fisiológicos longitudinais para classificar o nível de recuperação diária (*recovery*: Baixa, Moderada, Alta), prevenindo quadros de fadiga crônica e otimizando a prescrição de treinos.
+O **FitMatch** é uma aplicação inteligente focada na recomendação de exercícios físicos e monitoramento de performance esportiva. O principal objetivo é processar, analisar e modelar dados de atividades longitudinais para classificar o nível de recuperação diária (*recovery*: Baixa, Moderada, Alta), prevenindo quadros de fadiga e otimizando a prescrição de treinos.
 
 A arquitetura do sistema foi estruturada em módulos analíticos utilizando **Dash/Plotly**, contemplando:
 1. **Módulo de Classificação Avançada:** Pipeline preditivo baseado em Random Forest, aliado ao SMOTE para tratamento de desbalanceamento de classes e acompanhamento de métricas (Curva ROC e Matriz de Confusão).
 2. **Explicabilidade (XAI - SHAP):** Análise de impacto global das variáveis preditivas (como calorias gastas, HRV e horas de sono) com visual customizado em degradê azul e integração total ao tema escuro.
 3. **Módulo de Visualização de Dados e EDA:** Painéis interativos para exploração descritiva, auditoria e tratamento do dataset original.
+
+---
+
+## 💻 Suas Contribuições no Projeto (Kassiane Gomes da Silva)
+
+Como desenvolvedora principal desta frente, fiquei responsável por:
+* **Pipeline de Machine Learning & SMOTE:** Implementação do script de treinamento (`train_pipeline.py`) com Random Forest, aplicando o SMOTE de forma isolada nos dados de treino para evitar vazamento de dados (*data leakage*) e equalizar as classes de recuperação.
+* **Módulo de Classificação Avançada & XAI:** Desenvolvimento da página de Classificação Avançada no Dash, integrando a matriz de confusão, curva ROC e o gráfico de Importância das Variáveis (SHAP) customizado com degradê azul e tratamento visual para variáveis irrelevantes.
+* **Integração Visual do Dashboard:** Estruturação da interface multipáginas em Dash/Plotly, otimizando o layout para tema escuro e garantindo o carregamento limpo dos artefatos visuais.
 
 ---
 
