@@ -68,6 +68,37 @@ O pipeline de classificação supervisionada processa as classes alvo divididas 
    - **Matriz de Confusão** interativa com heatmaps otimizados.
    - **Importância das Variáveis (SHAP / Explicabilidade):** Identificação do impacto absoluto e queda média na acurácia por variável fisiológica (`hrv`, `sleep_hours`, `activity_strain`, etc.).
 
+## 🛠️ Implementações e Ajustes
+
+* **Pipeline de Classificação Supervisionada:** Construção de um fluxo completo de Machine Learning em Python para prever estados de recuperação de atletas divididos em 3 categorias (`Baixa`, `Moderada`, `Alta`) usando o WHOOP Fitness Dataset.
+* **Balanceamento de Dados (SMOTE):** Implementação da técnica SMOTE para corrigir o desbalanceamento natural das classes de recuperação na base de dados.
+* **Modelagem Probabilística (Naive Bayes & LightGBM):** Configuração do Naive Bayes como modelo principal de classificação (para gerar distribuições de probabilidade precisas) e do LightGBM (3VA) como modelo de alta performance para comparação de acurácia e F1-Score.
+* **Visualizações e Métricas Avançadas no Dash:**
+   * **Curva ROC Multiclasse:** Alinhamento matemático das colunas de probabilidade do modelo com as classes reais, garantindo curvas e valores de AUC corretos e realistas em um layout compacto e quadrado.
+   * **Matriz de Confusão Interativa:** Heatmap com tons de azul e contraste inteligente para facilitar a leitura dos acertos e erros do modelo.
+   * **Gráfico de Explicabilidade (SHAP):** Personalização da exibição da importância das variáveis, tratando variáveis com impacto nulo ou mínimo (como `sleep_performance` e `hrv_baseline`) para exibirem explicitamente o valor `0` com bloquinhos proporcionais e limpos, mantendo a hierarquia correta entre as demais métricas (como `resting_heart_rate` e `calories_burned`).
+
+## 📌 Justificativas Técnicas
+
+**Por que usar o SMOTE?**
+* *Como escolhi:* Identificando que o dataset de wearables costuma ter distribuições desiguais entre dias de alta e baixa recuperação.
+* *Por quê:* Para evitar que o algoritmo ficasse viciado apenas na classe majoritária, garantindo um treinamento justo e equilibrado para todas as categorias.
+
+**Por que escolher o Naive Bayes e o LightGBM?**
+* *Como escolhi:* Testando abordagens probabilísticas e de Gradient Boosting focadas em eficiência.
+* *Por quê:* O Naive Bayes foi escolhido por sua robustez estatística em classificar probabilidades (`predict_proba`), o que permitiu traçar a Curva ROC multiclasse com facilidade. Já o LightGBM entrou como uma alternativa moderna de árvore de decisão para contrapor as métricas de desempenho.
+
+**Por que incluir Curva ROC, Matriz de Confusão e SHAP?**
+* *Como escolhi:* Buscando uma avaliação de 360 graus do modelo preditivo.
+* *Por quê:*
+   * A Matriz de Confusão mostra onde o modelo está errando na prática.
+   * A Curva ROC valida a capacidade discriminatória de cada classe separadamente.
+   * O SHAP foi escolhido por ser o padrão ouro em explicabilidade de IA — fundamental em projetos voltados a saúde e wearables, pois explica exatamente quais fatores fisiológicos pesaram na decisão do modelo.
+
+**Por que ajustar o visual dos gráficos (tamanhos de blocos e zeros)?**
+* *Como escolhi:* Refinando a interface de usuário (UI) do Dashboard em Dash/Plotly.
+* *Por quê:* Para garantir uma experiência de apresentação impecável, limpa e profissional, onde variáveis irrelevantes não poluem visualmente a tela e mantêm uma hierarquia lógica compreensível para quem está assistindo.
+
 ## 🚀 Como Executar o Ambiente
 
 1. **Clone o repositório:**
