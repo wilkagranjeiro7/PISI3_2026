@@ -1,5 +1,0 @@
-Resultados gerados por Dashboard/run_pipeline_carlos.py.
-O SMOTE foi aplicado somente ao treino. O teste permaneceu intocado.
-Acurácia final: 0.7159.
-Os 65,8% da 3VA são uma referência histórica; os protocolos diferem.
-Diferença para a referência da 3VA: 5.79 pontos percentuais.

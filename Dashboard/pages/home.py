@@ -180,23 +180,19 @@ def create_layout(df):
                 "Pipeline com XAI e Balanceamento",
                 "brain"
             ),
-            card(
-                "Pipeline Carlos",
-                "/pipeline-carlos",
-                "SMOTE, classificação e explicabilidade SHAP",
-                "chart-column"
-            ),
-
-
-        ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
-        html.Div([
-            card(
+             card(
                 "Pipeline Leonardo",
                 "/pipeline-leonardo",
                 "V.A Final - Novo modelo de classificação e pipeline",
                 "chart-column"
             ),
+        
+
+
         ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
+        # html.Div([
+           
+        # ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
     ])
 
     # ================== RODAPÉ ==================
