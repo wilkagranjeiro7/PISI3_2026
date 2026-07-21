@@ -1,7 +1,7 @@
 from pages import (
     home, dataframes, filtros, agrupamentos, profiling,
     parquet, plots, kmeans, classificacao,
-    eda, insights, advanced_classification, pipeline_carlos
+    eda, insights, advanced_classification, pipeline_carlos, pipeline_leonardo
 )
 from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
@@ -245,11 +245,12 @@ def display_page(pathname):
         '/insights': insights.create_layout,
         '/advanced-classification': advanced_classification.create_layout,
         '/pipeline-carlos': pipeline_carlos.create_layout,
+        '/pipeline-leonardo': pipeline_leonardo.create_layout
     }
-    
+
     # Página padrão (home)
     page_func = pages.get(pathname, home.create_layout)
-    
+
     # Retorna a página com o DataFrame
     return page_func(df)
 

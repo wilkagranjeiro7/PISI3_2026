@@ -44,35 +44,45 @@ def create_layout(df):
     header = html.Div([
         html.H1(
             "Dashboard FitMatch",
-            style={'textAlign': 'center', 'color': COLORS['text'], 'marginBottom': '10px', 'fontSize': '36px'}
+            style={'textAlign': 'center',
+                   'color': COLORS['text'], 'marginBottom': '10px', 'fontSize': '36px'}
         ),
         html.P(
             "Esse é um dashboard com dados de saúde para apoio ao aplicativo FitMatch",
-            style={'textAlign': 'center', 'color': COLORS['text_secondary'], 'marginBottom': '30px'}
+            style={'textAlign': 'center',
+                   'color': COLORS['text_secondary'], 'marginBottom': '30px'}
         ),
     ])
 
     # ================== INFO DATASET CARD (tamanho igual aos cards de navegação) ==================
     info_card = html.Div([
         html.Div([
-            html.H4("Dataset", style={'color': COLORS['text'], 'marginBottom': '15px', 'textAlign': 'center'}),
+            html.H4("Dataset", style={
+                    'color': COLORS['text'], 'marginBottom': '15px', 'textAlign': 'center'}),
             html.Div([
                 html.Div([
-                    html.H3(f"{total_registros:,}", style={'color': COLORS['accent'], 'marginBottom': '5px'}),
-                    html.P("Registros", style={'color': COLORS['text_secondary']})
+                    html.H3(f"{total_registros:,}", style={
+                            'color': COLORS['accent'], 'marginBottom': '5px'}),
+                    html.P("Registros", style={
+                           'color': COLORS['text_secondary']})
                 ], style={'flex': '1', 'textAlign': 'center'}),
                 html.Div([
-                    html.H3(f"{total_usuarios:,}", style={'color': COLORS['success'], 'marginBottom': '5px'}),
-                    html.P("Usuários", style={'color': COLORS['text_secondary']})
+                    html.H3(f"{total_usuarios:,}", style={
+                            'color': COLORS['success'], 'marginBottom': '5px'}),
+                    html.P("Usuários", style={
+                           'color': COLORS['text_secondary']})
                 ], style={'flex': '1', 'textAlign': 'center'}),
                 html.Div([
-                    html.H3(f"{total_colunas}", style={'color': COLORS['warning'], 'marginBottom': '5px'}),
-                    html.P("Colunas", style={'color': COLORS['text_secondary']})
+                    html.H3(f"{total_colunas}", style={
+                            'color': COLORS['warning'], 'marginBottom': '5px'}),
+                    html.P("Colunas", style={
+                           'color': COLORS['text_secondary']})
                 ], style={'flex': '1', 'textAlign': 'center'}),
             ], style={'display': 'flex', 'justifyContent': 'space-around', 'marginBottom': '15px'}),
             html.P(
                 f"Período: {data_min.strftime('%d/%m/%Y') if pd.notnull(data_min) else 'N/A'} → {data_max.strftime('%d/%m/%Y') if pd.notnull(data_max) else 'N/A'}",
-                style={'color': COLORS['text_secondary'], 'textAlign': 'center', 'marginTop': '10px'}
+                style={'color': COLORS['text_secondary'],
+                       'textAlign': 'center', 'marginTop': '10px'}
             ),
         ], style={'padding': '20px'})
     ], style={
@@ -89,10 +99,13 @@ def create_layout(df):
         return html.Div([
             html.Div([
                 html.Div([
-                    html.I(className=f"fas fa-{icone}", style={'color': COLORS['accent'], 'fontSize': '24px', 'marginRight': '10px'}) if icone else None,
-                    html.H5(titulo, style={'color': COLORS['text'], 'marginBottom': '10px', 'fontWeight': '600'}),
+                    html.I(className=f"fas fa-{icone}", style={
+                           'color': COLORS['accent'], 'fontSize': '24px', 'marginRight': '10px'}) if icone else None,
+                    html.H5(titulo, style={
+                            'color': COLORS['text'], 'marginBottom': '10px', 'fontWeight': '600'}),
                 ], style={'display': 'flex', 'alignItems': 'center'}),
-                html.P(descricao, style={'color': COLORS['text_secondary'], 'marginBottom': '15px', 'fontSize': '14px'}),
+                html.P(descricao, style={
+                       'color': COLORS['text_secondary'], 'marginBottom': '15px', 'fontSize': '14px'}),
                 html.A(
                     "Acessar →",
                     href=link,
@@ -130,9 +143,11 @@ def create_layout(df):
 
         # LINHA 1
         html.Div([
-            card("Dataframes", "/dataframes", "Exploração completa dos dados", "table"),
+            card("Dataframes", "/dataframes",
+                 "Exploração completa dos dados", "table"),
             card("EDA", "/eda", "Análise exploratória interativa", "chart-line"),
-            card("Profiling", "/profiling", "Resumo da qualidade dos dados", "clipboard-list"),
+            card("Profiling", "/profiling",
+                 "Resumo da qualidade dos dados", "clipboard-list"),
         ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
 
         # LINHA 2
@@ -144,9 +159,11 @@ def create_layout(df):
 
         # LINHA 3
         html.Div([
-            card("Agrupamentos", "/agrupamentos", "Agregações e group by", "layer-group"),
+            card("Agrupamentos", "/agrupamentos",
+                 "Agregações e group by", "layer-group"),
             card("K-Means", "/kmeans", "Clusterização de usuários", "circle-nodes"),
-            card("Classificação", "/classificacao", "Modelos de machine learning", "robot"),
+            card("Classificação", "/classificacao",
+                 "Modelos de machine learning", "robot"),
         ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
 
         # LINHA 4 - INSIGHTS (DESTAQUE)
@@ -169,6 +186,16 @@ def create_layout(df):
                 "SMOTE, classificação e explicabilidade SHAP",
                 "chart-column"
             ),
+
+
+        ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
+        html.Div([
+            card(
+                "Pipeline Leonardo",
+                "/pipeline-leonardo",
+                "V.A Final - Novo modelo de classificação e pipeline",
+                "chart-column"
+            ),
         ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
     ])
 
@@ -176,7 +203,8 @@ def create_layout(df):
     footer = html.Div([
         html.P(
             f"Recife | {data_atual}",
-            style={'textAlign': 'center', 'color': COLORS['text_secondary'], 'fontSize': '12px', 'marginTop': '30px', 'paddingTop': '20px', 'borderTop': f'1px solid {COLORS["border"]}'}
+            style={'textAlign': 'center', 'color': COLORS['text_secondary'], 'fontSize': '12px',
+                   'marginTop': '30px', 'paddingTop': '20px', 'borderTop': f'1px solid {COLORS["border"]}'}
         )
     ])
 
