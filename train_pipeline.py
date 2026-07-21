@@ -1,14 +1,14 @@
-import pandas as pd
-import numpy as np
+import os
+import sys
 import joblib
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import os
-import shap
+import numpy as np
+import pandas as pd
 
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -16,6 +16,7 @@ from sklearn.metrics import (
     f1_score,
     confusion_matrix
 )
+from sklearn.inspection import permutation_importance
 
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline
@@ -57,25 +58,24 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 # ==============================================================================
-# 5. PIPELINE (SMOTE + RANDOM FOREST)
+# 5. PIPELINE (SMOTE + NAIVE BAYES)
 # ==============================================================================
-print("\nTREINANDO RANDOM FOREST...")
+print("\nTREINANDO NAIVE BAYES (COM SMOTE)...")
 pipeline = Pipeline([
     ("smote", SMOTE(random_state=42)),
-    ("classifier", RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1))
+    ("classifier", GaussianNB())
 ])
 
 pipeline.fit(X_train, y_train)
 
-# Distribuição após SMOTE
 X_resampled, y_resampled = pipeline.named_steps["smote"].fit_resample(X_train, y_train)
 dist_depois = pd.Series(y_resampled).value_counts().to_dict()
 
 # ==============================================================================
-# 6. AVALIAÇÃO
+# 6. AVALIAÇÃO DO MODELO ATUAL (NAIVE BAYES)
 # ==============================================================================
 y_pred = pipeline.predict(X_test)
-metrics = {
+metrics_nb = {
     "accuracy": accuracy_score(y_test, y_pred),
     "precision": precision_score(y_test, y_pred, average="weighted", zero_division=0),
     "recall": recall_score(y_test, y_pred, average="weighted", zero_division=0),
@@ -85,104 +85,128 @@ metrics = {
 }
 
 # ==============================================================================
+# 7. COMPARAÇÃO COM O MELHOR MODELO DA 3VA (LIGHTGBM)
 # ==============================================================================
-# ==============================================================================
-# ==============================================================================
-# ==============================================================================
-# ==============================================================================
-# ==============================================================================
-# ==============================================================================
-# 7. SHAP (XAI) - VISUAL IDÊNTICO À REFERÊNCIA (COM DEGRADÊ E COLORBAR)
-# ==============================================================================
-print("\nGERANDO GRÁFICO SHAP...")
-import matplotlib.colors as mcolors
+metrics_lgbm = {
+    "accuracy": 0.952,
+    "precision": 0.951,
+    "recall": 0.952,
+    "f1_score": 0.951
+}
 
-rf_model = pipeline.named_steps["classifier"]
-explainer = shap.TreeExplainer(rf_model)
+print("\n--- COMPARAÇÃO DE RESULTADOS ---")
+print(f"LightGBM (3VA) - Acurácia: {metrics_lgbm['accuracy']:.3f} | F1: {metrics_lgbm['f1_score']:.3f}")
+print(f"Naive Bayes   - Acurácia: {metrics_nb['accuracy']:.3f} | F1: {metrics_nb['f1_score']:.3f}")
 
-sample_size = min(300, len(X_test))
-X_test_sample = X_test.sample(n=sample_size, random_state=42)
-shap_values = explainer.shap_values(X_test_sample)
+# ==============================================================================
+# 8. CÁLCULO DE IMPORTÂNCIA DAS VARIÁVEIS (Normalizado para Proporção 0-100%)
+# ==============================================================================
+print("\nCALCULANDO IMPORTÂNCIA DAS VARIÁVEIS...")
+resultado_importancia = permutation_importance(pipeline, X_test, y_test, n_repeats=5, random_state=42)
 
-# Tratamento para garantir o tamanho correto
-if isinstance(shap_values, list):
-    vals = np.array(shap_values)
-    mean_shap_values = np.abs(vals).mean(axis=1).mean(axis=0)
+raw_importances = resultado_importancia.importances_mean
+importances_pos = np.clip(raw_importances, 0, None)
+
+if importances_pos.sum() > 0:
+    importances_relativas = (importances_pos / importances_pos.sum()) * 100
 else:
-    if hasattr(shap_values, "values"):
-        vals = shap_values.values
-    else:
-        vals = np.array(shap_values)
-        
-    if len(vals.shape) == 3:
-        mean_shap_values = np.abs(vals).mean(axis=0).mean(axis=1)
-    else:
-        mean_shap_values = np.abs(vals).mean(axis=0)
+    importances_relativas = importances_pos * 100
 
-df_shap = pd.DataFrame({'feature': X_test_sample.columns, 'importance': mean_shap_values})
+shap_summary = []
+for i, feature in enumerate(features):
+    shap_summary.append({
+        "feature": feature,
+        "importance": round(importances_relativas[i], 1)
+    })
 
-# TRUQUE VISUAL: Se a importância for 0, coloca um valor minúsculo só para desenhar a pontinha da barra
-max_imp = df_shap['importance'].max()
-tiny_value = max_imp * 0.015  # 1.5% do tamanho da maior barra
-df_shap.loc[df_shap['importance'] == 0, 'importance'] = tiny_value
+shap_summary = sorted(shap_summary, key=lambda x: x["importance"], reverse=True)
 
-df_shap = df_shap.sort_values(by='importance', ascending=True)
-
-# ---------------------------------------------------------
-# CONFIGURAÇÃO DE ESTILO: DEGRADÊ E COLORBAR
-# ---------------------------------------------------------
+# ==============================================================================
+# 9. GERAÇÃO DOS GRÁFICOS EM IMAGEM
+# ==============================================================================
+print("\nGERANDO OS GRÁFICOS...")
 os.makedirs("Dashboard/assets", exist_ok=True)
-fig, ax = plt.subplots(figsize=(10, 7), facecolor='none')
+
+cores_categorias = {'Baixa': '#2A4B6B', 'Moderada': '#528AB5', 'Alta': '#89C2EB'}
+
+# --- GRÁFICO 1: Média de HRV ---
+df_hrv_mean = df.groupby('recovery_category', observed=False)['hrv'].mean().reset_index()
+fig, ax = plt.subplots(figsize=(8, 5), facecolor='none')
 ax.set_facecolor('none')
-
-# Criando o mapa de cores (Degradê Azul) baseado nos valores de importância
-cmap = plt.cm.Blues
-norm = mcolors.Normalize(vmin=df_shap['importance'].min(), vmax=df_shap['importance'].max())
-cores = cmap(norm(df_shap['importance'].values))
-
-# Desenhando as barras com as cores mapeadas e uma borda suave
-barras = ax.barh(df_shap['feature'], df_shap['importance'], color=cores, edgecolor='#555555', linewidth=0.5)
-
-# Estilizando os eixos para o modo escuro
+bars1 = ax.bar(df_hrv_mean['recovery_category'], df_hrv_mean['hrv'], 
+               color=[cores_categorias[cat] for cat in df_hrv_mean['recovery_category']], 
+               edgecolor='#555555', width=0.6)
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 ax.spines['left'].set_color('#555555')
 ax.spines['bottom'].set_color('#555555')
-
 ax.tick_params(colors='white')
-ax.set_xlabel("Importance", color='white', fontsize=12)
-ax.set_ylabel("Feature", color='white', fontsize=12)
-
-# Adicionando a barra lateral de cores (Colorbar) igual à foto
-sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-sm.set_array([])
-cbar = fig.colorbar(sm, ax=ax)
-cbar.ax.yaxis.set_tick_params(color='white')
-cbar.ax.tick_params(labelsize=10, colors='white')
-cbar.set_label('Importance', color='white', fontsize=12)
-
-# A anotação amarela do sleep_performance foi completamente removida!
-
-plt.title("Importância das Variáveis (SHAP)", fontsize=14, pad=15, color='white')
+ax.set_ylabel("HRV Médio (ms)", color='white', fontsize=11)
+ax.set_title("HRV Médio por Categoria de Recuperação", color='white', fontsize=13, pad=12)
+for bar in bars1:
+    yval = bar.get_height()
+    ax.text(bar.get_x() + bar.get_width()/2.0, yval + 1, f'{yval:.1f}ms', ha='center', va='bottom', color='white', fontsize=10)
 plt.tight_layout()
-
-# Salvando com fundo totalmente transparente
-plt.savefig("Dashboard/assets/shap_bar_plot.png", dpi=300, transparent=True)
+plt.savefig("Dashboard/assets/grafico_hrv.png", dpi=300, transparent=True)
 plt.close()
 
-print("Gráfico SHAP gerado com sucesso!")
+# --- GRÁFICO 2: Média de Sono ---
+df_sono_mean = df.groupby('recovery_category', observed=False)['sleep_hours'].mean().reset_index()
+fig, ax = plt.subplots(figsize=(8, 5), facecolor='none')
+ax.set_facecolor('none')
+bars2 = ax.bar(df_sono_mean['recovery_category'], df_sono_mean['sleep_hours'], 
+               color=[cores_categorias[cat] for cat in df_sono_mean['recovery_category']], 
+               edgecolor='#555555', width=0.6)
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['left'].set_color('#555555')
+ax.spines['bottom'].set_color('#555555')
+ax.tick_params(colors='white')
+ax.set_ylabel("Média de Horas de Sono", color='white', fontsize=11)
+ax.set_title("Média de Horas de Sono por Categoria de Recuperação", color='white', fontsize=13, pad=12)
+for bar in bars2:
+    yval = bar.get_height()
+    ax.text(bar.get_x() + bar.get_width()/2.0, yval + 0.1, f'{yval:.1f}h', ha='center', va='bottom', color='white', fontsize=10)
+plt.tight_layout()
+plt.savefig("Dashboard/assets/grafico_sono.png", dpi=300, transparent=True)
+plt.close()
+
+# --- GRÁFICO 3: Impacto do Estresse (Strain) ---
+print("Gerando Gráfico 3: Impacto do Estresse (Strain)...")
+df_strain_mean = df.groupby('recovery_category', observed=False)['activity_strain'].mean().reset_index()
+fig, ax = plt.subplots(figsize=(8, 5), facecolor='none')
+ax.set_facecolor('none')
+bars3 = ax.bar(df_strain_mean['recovery_category'], df_strain_mean['activity_strain'], 
+               color=[cores_categorias[cat] for cat in df_strain_mean['recovery_category']], 
+               edgecolor='#555555', width=0.6)
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['left'].set_color('#555555')
+ax.spines['bottom'].set_color('#555555')
+ax.tick_params(colors='white')
+ax.set_ylabel("Nível de Estresse / Strain Médio", color='white', fontsize=11)
+ax.set_title("Impacto do Estresse Diário (Strain) na Recuperação", color='white', fontsize=13, pad=12)
+for bar in bars3:
+    yval = bar.get_height()
+    ax.text(bar.get_x() + bar.get_width()/2.0, yval + 0.5, f'{yval:.1f}', ha='center', va='bottom', color='white', fontsize=10)
+plt.tight_layout()
+plt.savefig("Dashboard/assets/grafico_estresse_strain.png", dpi=300, transparent=True)
+plt.close()
+
 # ==============================================================================
-# 8. SALVAMENTO FINAL
+# 10. SALVAMENTO DOS DADOS PARA O DASHBOARD (`lts.pkl`)
 # ==============================================================================
+print("\nSALVANDO DADOS PARA O DASHBOARD...")
 y_proba = pipeline.predict_proba(X_test)
 joblib.dump({
-    "metrics": metrics,
+    "metrics": metrics_nb,
+    "metrics_lgbm": metrics_lgbm,
     "dist_antes": dist_antes,
     "dist_depois": dist_depois,
-    "shap_summary": "Feito",
+    "shap_summary": shap_summary,
     "y_test": y_test,
     "y_proba": y_proba,
     "classes": pipeline.classes_
 }, "lts.pkl")
 
-print("\nPIPELINE CONCLUÍDO COM SUCESSO!")
+print("PIPELINE CONCLUÍDO E TODOS OS ARQUIVOS SALVOS COM SUCESSO!")
