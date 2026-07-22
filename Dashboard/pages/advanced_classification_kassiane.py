@@ -209,7 +209,7 @@ def create_layout(df):
     )
 
     # ==========================================================
-    # GRÁFICO 5: IMPORTÂNCIA DAS VARIÁVEIS (SHAP) - 0 em Sleep e HRV, Proporções ajustadas
+    # GRÁFICO 5: IMPORTÂNCIA DAS VARIÁVEIS (PERMUTATION IMPORTANCE)
     # ==========================================================
     df_shap = pd.DataFrame(shap_summary)
     
@@ -220,7 +220,6 @@ def create_layout(df):
         df_shap = df_shap.dropna(subset=['feature', 'importance'])
         df_shap['importance'] = df_shap['importance'].fillna(0)
         
-        # Força o rótulo "0" para sleep_performance, sleep_performace e hrv_baseline
         def get_custom_label(row):
             feat = str(row["feature"]).lower()
             imp = row["importance"]
@@ -230,7 +229,6 @@ def create_layout(df):
 
         df_shap["text_label"] = df_shap.apply(get_custom_label, axis=1)
         
-        # HRV baseline e Sleep performance com exatamente o mesmo tamanho (0.3)
         def get_custom_plot_width(row):
             feat = str(row["feature"]).lower()
             if "hrv_baseline" in feat or "sleep_performance" in feat or "sleep_performace" in feat:
@@ -250,7 +248,7 @@ def create_layout(df):
             x='plot_importance',
             y='feature',
             orientation='h',
-            title="Importância das Variáveis (Explicabilidade / SHAP)",
+            title="Importância das Variáveis (Permutation Importance)",
             text="text_label",
             color_discrete_sequence=['#89C2EB']
         )
