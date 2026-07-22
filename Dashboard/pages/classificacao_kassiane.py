@@ -127,7 +127,8 @@ def create_layout(df):
     )
 
     # ==========================================================
-    # GRÁFICO 4: IMPORTÂNCIA DAS VARIÁVEIS (SHAP)
+    # ==========================================================
+    # GRÁFICO 4: IMPORTÂNCIA DAS VARIÁVEIS (PERMUTATION IMPORTANCE)
     # ==========================================================
     df_shap = pd.DataFrame(shap_summary)
     
@@ -142,7 +143,7 @@ def create_layout(df):
             x='importance',
             y='feature',
             orientation='h',
-            title="Importância das Variáveis (SHAP - Naive Bayes)",
+            title="Importância das Variáveis (Permutation Importance)",
             color='importance',
             color_continuous_scale=['#1A1A1A', '#89C2EB']
         )
@@ -152,7 +153,7 @@ def create_layout(df):
             plot_bgcolor=CORES['card_bg'],
             font_color=CORES['text'],
             height=320,
-            xaxis=dict(title="Impacto Médio Absoluto (SHAP)", gridcolor=CORES['border']),
+            xaxis=dict(title="Queda Média na Acurácia (%)", gridcolor=CORES['border']),
             yaxis=dict(title="", gridcolor=CORES['border']),
             showlegend=False
         )

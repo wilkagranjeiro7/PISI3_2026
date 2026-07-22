@@ -884,6 +884,33 @@ def create_layout(df):
 
     try:
         df = preprocess_data(df)
+
+        # ==========================================================
+        # IMPRIMINDO VALORES EXATOS PARA A TABELA 2
+        # ==========================================================
+        print("\n" + "="*50)
+        print("VALORES EXATOS PARA PREENCHER A TABELA DO ARTIGO:")
+        
+        # Nomes exatos das colunas traduzidas do seu dataset
+        colunas_para_ver = [
+            'VFC', 
+            'Horas de Sono', 
+            'Tensão do Dia', 
+            'Calorias Queimadas', 
+            'Frequência Cardíaca em Repouso', 
+            'Performance do Sono', 
+            'VFC Base'
+        ]
+        
+        for col in colunas_para_ver:
+            if col in df.columns:
+                valores = pd.to_numeric(df[col], errors='coerce')
+                print(f"- {col}: Média = {valores.mean():.1f} | Desvio = {valores.std():.1f} | Min = {valores.min():.1f} | Max = {valores.max():.1f}")
+            else:
+                print(f"❌ ATENÇÃO: A coluna '{col}' não foi encontrada.")
+        print("="*50 + "\n")
+        # ==========================================================
+
     except Exception as e:
         return html.Div(
             f"Erro no processamento: {str(e)}",
