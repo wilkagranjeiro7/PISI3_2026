@@ -180,19 +180,24 @@ def create_layout(df):
                 "Pipeline com XAI e Balanceamento",
                 "brain"
             ),
-             card(
+            card(
                 "Pipeline Leonardo",
                 "/pipeline-leonardo",
                 "V.A Final - Novo modelo de classificação e pipeline",
                 "chart-column"
             ),
-        
+
 
 
         ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
-        # html.Div([
-           
-        # ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
+        html.Div([
+            card(
+                "Repositorios de Graficos Plotados - Leaonardo",
+                "/pipeline-leonardo-resultado",
+                "   Repositórios dos Gráficos - 7 arquivos disponíveis",
+                "chart-column"
+            ),
+        ], style={'display': 'flex', 'gap': '20px', 'marginBottom': '20px', 'flexWrap': 'wrap'}),
     ])
 
     # ================== RODAPÉ ==================
